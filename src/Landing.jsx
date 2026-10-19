@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import Lenis from "lenis";
 import {
   motion,
   AnimatePresence,
@@ -7,6 +8,8 @@ import {
   useInView,
   useMotionValue,
   useSpring,
+  useVelocity,
+  useAnimationFrame,
   useMotionValueEvent,
 } from "framer-motion";
 import {
@@ -42,15 +45,17 @@ import {
   FileText,
   Lightbulb,
   MousePointer2,
+  Gauge,
   Wrench,
   Activity,
-  Gauge,
+  LayoutGrid,
+  MoveHorizontal,
 } from "lucide-react";
 
 import Logo from "./assets/logo.jpeg";
 
 // ============================================================================
-// REAL-WORLD PROJECT & COMPANY DATA
+// EXPANDED DATA SETS
 // ============================================================================
 const INITIAL_GALLERY_ITEMS = [
   {
@@ -62,6 +67,7 @@ const INITIAL_GALLERY_ITEMS = [
     budget: "$2,686,856 USD",
     client: "Ministry of Infrastructure & Public Works / ARMP",
     badge: "Inaugurated Presidential Project",
+    metrics: "6,400 m² • 48 Months Warranty",
     image:
       "https://images.unsplash.com/photo-1541888946425-d81bb18086f6?auto=format&fit=crop&w=1200&q=85",
     description:
@@ -76,6 +82,7 @@ const INITIAL_GALLERY_ITEMS = [
     budget: "Multi-Phase Provincial Contract",
     client: "Haut-Katanga Provincial Government",
     badge: "ARMP Certified",
+    metrics: "18.5 km • 120mm Hot-Mix Asphalt",
     image:
       "https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?auto=format&fit=crop&w=1200&q=85",
     description:
@@ -90,6 +97,7 @@ const INITIAL_GALLERY_ITEMS = [
     budget: "$3.4M USD",
     client: "Public & Corporate Clients",
     badge: "ISO 9001 Standards",
+    metrics: "C35/45 Concrete • 1,200T Rebar",
     image:
       "https://images.unsplash.com/photo-1503387762-592deb58ef4e?auto=format&fit=crop&w=1200&q=85",
     description:
@@ -104,6 +112,7 @@ const INITIAL_GALLERY_ITEMS = [
     budget: "$1.85M USD",
     client: "Office des Voiries et Drainage (OVD)",
     badge: "Attestation ARMP N° 138/2024",
+    metrics: "9.2 km Channels • 45m³/s Flow",
     image:
       "https://images.unsplash.com/photo-1590674899484-d5640e854abe?auto=format&fit=crop&w=1200&q=85",
     description:
@@ -118,6 +127,7 @@ const INITIAL_GALLERY_ITEMS = [
     budget: "Proprietary Fleet",
     client: "AID SARL Internal Logistics",
     badge: "65+ Heavy Machines",
+    metrics: "180T/hr Mobile Batching",
     image:
       "https://images.unsplash.com/photo-1581094288338-2314dddb7ece?auto=format&fit=crop&w=1200&q=85",
     description:
@@ -132,6 +142,7 @@ const INITIAL_GALLERY_ITEMS = [
     budget: "$4.10M USD",
     client: "Private & Institutional Partners",
     badge: "Turnkey Delivery",
+    metrics: "R+5 Curtain Wall • Smart HVAC",
     image:
       "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1200&q=85",
     description:
@@ -146,6 +157,7 @@ const INITIAL_GALLERY_ITEMS = [
     budget: "$2.95M USD",
     client: "Mining & Industrial Operators",
     badge: "Heavy Load Engineering",
+    metrics: "60-Ton Axle Load Capacity",
     image:
       "https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=1200&q=85",
     description:
@@ -160,10 +172,227 @@ const INITIAL_GALLERY_ITEMS = [
     budget: "Continuous QA/QC",
     client: "AID Bureau d’Études",
     badge: "Zero-Defect Policy",
+    metrics: "±2mm RTK GNSS Precision",
     image:
       "https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=1200&q=85",
     description:
       "Our on-site civil engineers and surveyors utilizing total stations, drone mapping, and soil compaction testing to guarantee international engineering compliance.",
+  },
+  {
+    id: "proj-9",
+    title: "Lualaba River Reinforced Concrete Bridge Crossing",
+    category: "Bridges & Civil",
+    location: "Kasumbalesa - Mokambo Axis, DRC",
+    year: "2025",
+    budget: "$3.75M USD",
+    client: "FONER / Ministry of Public Works",
+    badge: "Post-Tensioned Girder",
+    metrics: "85m Span • Deep Pile Abutments",
+    image:
+      "https://images.unsplash.com/photo-1513828583688-c52646db42da?auto=format&fit=crop&w=1200&q=85",
+    description:
+      "Multi-span reinforced concrete box-girder bridge engineered to withstand seasonal river surges and heavy cross-border mineral freight trucks.",
+  },
+  {
+    id: "proj-10",
+    title: "Provincial Hospital & Diagnostic Center Annex (R+3)",
+    category: "Buildings",
+    location: "Lubumbashi, Haut-Katanga, DRC",
+    year: "2025",
+    budget: "$2.40M USD",
+    client: "Ministry of Public Health",
+    badge: "Medical Grade MEP",
+    metrics: "140 Beds • Cleanroom HVAC",
+    image:
+      "https://images.unsplash.com/photo-1587351021759-3e566b6af7cc?auto=format&fit=crop&w=1200&q=85",
+    description:
+      "Turnkey hospital wing featuring lead-lined radiology suites, medical gas piping, antimicrobial flooring, and redundant backup power.",
+  },
+  {
+    id: "proj-11",
+    title: "Kasumbalesa Border Freight Logistics Terminal Pad",
+    category: "Bridges & Civil",
+    location: "Kasumbalesa, Haut-Katanga, DRC",
+    year: "2024",
+    budget: "$2.15M USD",
+    client: "DGDA & Logistics Operators",
+    badge: "Fiber-Reinforced Concrete",
+    metrics: "42,000 m² Heavy Apron",
+    image:
+      "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=1200&q=85",
+    description:
+      "High-load industrial parking apron, customs weighbridge foundations, and perimeter high-mast floodlighting for 500+ daily freight trucks.",
+  },
+  {
+    id: "proj-12",
+    title: "Automated Hot-Mix Asphalt & Crushing Plant",
+    category: "Equipment",
+    location: "Likasi Road Quarry Site, DRC",
+    year: "2025",
+    budget: "Industrial Asset",
+    client: "AID SARL Production Unit",
+    badge: "160 Tons / Hour Output",
+    metrics: "0-31.5mm Aggregate Crushing",
+    image:
+      "https://images.unsplash.com/photo-1565008447742-97f6f38c985c?auto=format&fit=crop&w=1200&q=85",
+    description:
+      "Dedicated aggregate crushing line and computerized bitumen batching plant ensuring uninterrupted supply of certified hot-mix asphalt.",
+  },
+];
+
+const SITE_SIMULATION_PHASES = [
+  {
+    step: "01",
+    code: "GEO-RTK // 01",
+    title: "Topographical Drone Survey & Geotechnical Core Drilling",
+    metric: "CBR Soil Bearing > 35%",
+    depth: "-18.0m Borehole Stratum",
+    load: "450 kN/m² Bedrock",
+    layerLabel: "L1 • BEDROCK & GEOTECHNICAL GRID",
+    accent: "#10b981",
+    image:
+      "https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=1200&q=80",
+    specs: [
+      "±2mm RTK GNSS Rover Array",
+      "Rotary Core Diamond Drilling",
+      "Triaxial Shear & Plasticity Index",
+    ],
+    desc: "RTK GPS rover arrays and rotary core rigs map sub-surface rock strata, water tables, and soil compaction baselines prior to bulk excavation.",
+  },
+  {
+    step: "02",
+    code: "FND-RAFT // 02",
+    title: "Deep Foundation Piling & Seismic Raft Pouring",
+    metric: "C40/50 Sulfate-Resistant",
+    depth: "-6.5m Monolithic Raft",
+    load: "1,450 m³ Continuous Pour",
+    layerLabel: "L2 • DEEP PILES & SEISMIC RAFT",
+    accent: "#34d399",
+    image:
+      "https://images.unsplash.com/photo-1590674899484-d5640e854abe?auto=format&fit=crop&w=1200&q=80",
+    specs: [
+      "B500B High-Tensile Rebar Cages",
+      "Ø800mm Secant Bored Piles",
+      "Hydro-Insulated Foundation Slab",
+    ],
+    desc: "High-tensile B500B steel reinforcement cages lowered into bored piles and locked into a monolithic reinforced concrete seismic foundation raft.",
+  },
+  {
+    step: "03",
+    code: "STR-CORE // 03",
+    title: "R+2 Structural Frame, Columns & Post-Tensioned Slabs",
+    metric: "Zero-Defect Ultrasonic QC",
+    depth: "+14.2m Superstructure",
+    load: "1,200 Tons Structural Steel",
+    layerLabel: "L3 • R+2 POST-TENSIONED CORE",
+    accent: "#f59e0b",
+    image:
+      "https://images.unsplash.com/photo-1503387762-592deb58ef4e?auto=format&fit=crop&w=1200&q=80",
+    specs: [
+      "Slip-Form Seismic Shear Walls",
+      "Post-Tensioned Multi-Span Slabs",
+      "28-Day Cube Compression Lab QC",
+    ],
+    desc: "Vertical slip-form columns and post-tensioned floor slabs rise floor-by-floor with real-time laboratory slump and ultrasonic weld verification.",
+  },
+  {
+    step: "04",
+    code: "HWY-ASP // 04",
+    title: "Sub-Base Stabilization & 120mm Hot-Mix Asphalt Paving",
+    metric: "165°C Bitumen Laydown",
+    depth: "98.5% Marshall Density",
+    load: "60-Ton Axle Load Rating",
+    layerLabel: "L4 • 120MM POLYMER ASPHALT ARTERY",
+    accent: "#C86D2D",
+    image:
+      "https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?auto=format&fit=crop&w=1200&q=80",
+    specs: [
+      "0-31.5mm Crushed Stone Base",
+      "Vögele Laser Screed Finisher",
+      "Precast Box Culvert Drainage",
+    ],
+    desc: "Laser-guided Vögele finishers and tandem vibratory rollers lay polymer-modified wearing courses bordered by reinforced hydraulic channels.",
+  },
+  {
+    step: "05",
+    code: "MEP-ARMP // 05",
+    title: "Smart MEP Commissioning, Solar Array & ARMP Handover",
+    metric: "100% ARMP State Quitus",
+    depth: "+24.0m Roof Microgrid",
+    load: "250 kWp Hybrid Solar",
+    layerLabel: "L5 • SOLAR CROWN & ARMP HANDOVER",
+    accent: "#38bdf8",
+    image:
+      "https://images.unsplash.com/photo-1541888946425-d81bb18086f6?auto=format&fit=crop&w=1200&q=80",
+    specs: [
+      "Solar-Assisted Backup Microgrid",
+      "Acoustic Courtroom & HVAC BMS",
+      "ARMP N° 024/2025 Final Quitus",
+    ],
+    desc: "Full architectural solar glazing, acoustic courtroom paneling, centralised BMS HVAC commissioning, and official presidential inauguration.",
+  },
+];
+
+const FLEET_SHOWCASE_DATA = [
+  {
+    id: "flt-1",
+    name: "Vögele Super 1800-3i Tracked Paver",
+    category: "Asphalt Division",
+    capacity: "700 Tons/Hr Laydown",
+    count: "4 Units",
+    spec: "9.0m Screed Width • Niveltronic Plus Laser Grade",
+    image:
+      "https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?auto=format&fit=crop&w=900&q=80",
+  },
+  {
+    id: "flt-2",
+    name: "CAT 336D2 L Hydraulic Excavators",
+    category: "Bulk Earthworks",
+    capacity: "36-Ton Operating Weight",
+    count: "14 Units",
+    spec: "2.4m³ Heavy Rock Bucket • Hydraulic Breaker Ready",
+    image:
+      "https://images.unsplash.com/photo-1581094288338-2314dddb7ece?auto=format&fit=crop&w=900&q=80",
+  },
+  {
+    id: "flt-3",
+    name: "CAT 140K Motor Graders (Laser-Guided)",
+    category: "Sub-Base Precision",
+    capacity: "3.7m Moldboard Blade",
+    count: "8 Units",
+    spec: "±3mm 3D GNSS Cross-Slope Automation",
+    image:
+      "https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=900&q=80",
+  },
+  {
+    id: "flt-4",
+    name: "Liebherr 150 EC-B Tower Cranes & Mobile Cranes",
+    category: "High-Rise Structural",
+    capacity: "8-Ton Tip / 60m Jib",
+    count: "5 Units",
+    spec: "Frequency Converter Hoist • Anti-Collision Telemetry",
+    image:
+      "https://images.unsplash.com/photo-1503387762-592deb58ef4e?auto=format&fit=crop&w=900&q=80",
+  },
+  {
+    id: "flt-5",
+    name: "Hamm HD+ 120i Tandem & Pneumatic Rollers",
+    category: "Compaction Fleet",
+    capacity: "12-Ton High-Frequency",
+    count: "16 Units",
+    spec: "HCM Compaction Meter • Oscillation Drum",
+    image:
+      "https://images.unsplash.com/photo-1590674899484-d5640e854abe?auto=format&fit=crop&w=900&q=80",
+  },
+  {
+    id: "flt-6",
+    name: "Mobile Concrete Batching & Transit Mixers",
+    category: "Concrete Production",
+    capacity: "120 m³/Hr Output",
+    count: "18 Units",
+    spec: "Twin-Shaft Mixer • Automated Moisture Sensors",
+    image:
+      "https://images.unsplash.com/photo-1565008447742-97f6f38c985c?auto=format&fit=crop&w=900&q=80",
   },
 ];
 
@@ -218,6 +447,7 @@ const SERVICES_DATA = [
       "Architectural finishing & smart building systems",
     ],
     accent: "green",
+    metric: "ISO-9001 Structural Code",
   },
   {
     id: "srv-2",
@@ -231,6 +461,7 @@ const SERVICES_DATA = [
       "Reinforced concrete bridges & box culverts",
     ],
     accent: "orange",
+    metric: "120mm Polymer Bitumen",
   },
   {
     id: "srv-3",
@@ -244,6 +475,7 @@ const SERVICES_DATA = [
       "Industrial & municipal water supply pipelines",
     ],
     accent: "green",
+    metric: "45 m³/s Peak Drainage",
   },
   {
     id: "srv-4",
@@ -257,6 +489,7 @@ const SERVICES_DATA = [
       "Strict adherence to contractual timelines & budgets",
     ],
     accent: "orange",
+    metric: "100% ARMP Probity",
   },
   {
     id: "srv-5",
@@ -270,6 +503,7 @@ const SERVICES_DATA = [
       "Tailings & earthworks bulk excavation services",
     ],
     accent: "green",
+    metric: "60-Ton Axle Load Rated",
   },
   {
     id: "srv-6",
@@ -283,6 +517,7 @@ const SERVICES_DATA = [
       "Full QHSE (Quality, Health, Safety, Environment) supervision",
     ],
     accent: "orange",
+    metric: "±2mm RTK GNSS Survey",
   },
 ];
 
@@ -291,6 +526,9 @@ const INDUSTRIES_DATA = [
     id: "ind-1",
     title: "Transportation & Roads",
     icon: Truck,
+    stat: "180+ km Paved",
+    image:
+      "https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?auto=format&fit=crop&w=800&q=80",
     description:
       "Building the arteries of African commerce with durable highways, urban road modernization, and robust bridges designed for heavy industrial and civilian use.",
   },
@@ -298,6 +536,9 @@ const INDUSTRIES_DATA = [
     id: "ind-2",
     title: "Public & Civic Infrastructure",
     icon: Landmark,
+    stat: "R+2 to R+6 Complexes",
+    image:
+      "https://images.unsplash.com/photo-1541888946425-d81bb18086f6?auto=format&fit=crop&w=800&q=80",
     description:
       "Executing landmark public works including courthouses, ministries, and hospitals, adhering strictly to national (ARMP) and international standards.",
   },
@@ -305,6 +546,9 @@ const INDUSTRIES_DATA = [
     id: "ind-3",
     title: "Commercial Construction",
     icon: Factory,
+    stat: "Turnkey MEP & Glass",
+    image:
+      "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=800&q=80",
     description:
       "Turnkey development of administrative complexes, retail centers, and industrial facilities with a focus on modern aesthetics and long-term structural integrity.",
   },
@@ -312,6 +556,9 @@ const INDUSTRIES_DATA = [
     id: "ind-4",
     title: "Utilities & Civil Works",
     icon: Droplet,
+    stat: "Zero-Erosion Channels",
+    image:
+      "https://images.unsplash.com/photo-1590674899484-d5640e854abe?auto=format&fit=crop&w=800&q=80",
     description:
       "Specialized engineering for hydraulic networks, urban drainage, and erosion control systems to protect infrastructure against tropical climates.",
   },
@@ -388,17 +635,29 @@ const NAV_ITEMS = [
   { id: "services", label: "Services" },
   { id: "industries", label: "Industries" },
   { id: "work", label: "Our Work", badge: INITIAL_GALLERY_ITEMS.length },
+  { id: "fleet", label: "Fleet" },
   { id: "insights", label: "Insights" },
-  { id: "resources", label: "Resources" },
-  { id: "company", label: "Company" },
+  { id: "company", label: "ARMP" },
   { id: "contact", label: "Contact" },
 ];
 
 // ============================================================================
-// GLOBAL ANIMATION KEYFRAMES & BLUEPRINT PATTERNS
+// LENIS + GLOBAL STYLES
 // ============================================================================
 const GlobalMotionStyles = () => (
   <style>{`
+    html.lenis, html.lenis body {
+      height: auto;
+    }
+    .lenis.lenis-smooth {
+      scroll-behavior: auto !important;
+    }
+    .lenis.lenis-smooth [data-lenis-prevent] {
+      overscroll-behavior: contain;
+    }
+    .lenis.lenis-stopped {
+      overflow: hidden;
+    }
     @keyframes blobFloat {
       0%, 100% { transform: translate(0,0) scale(1); }
       33% { transform: translate(40px,-50px) scale(1.15); }
@@ -412,14 +671,14 @@ const GlobalMotionStyles = () => (
       0% { background-position: 0 0; }
       100% { background-position: 40px 0; }
     }
-    @keyframes beaconPulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.35; transform: scale(1.35); }
+    @keyframes scanlineSweep {
+      0% { transform: translateY(-100%); }
+      100% { transform: translateY(400%); }
     }
     .blob-anim { animation: blobFloat 14s ease-in-out infinite; }
     .blob-anim-delay { animation: blobFloat 18s ease-in-out infinite reverse; }
     .float-anim { animation: floatY 3.5s ease-in-out infinite; }
-    .beacon-pulse { animation: beaconPulse 1.4s ease-in-out infinite; }
+    .scanline-bar { animation: scanlineSweep 4.5s linear infinite; }
     .hazard-bar {
       background: repeating-linear-gradient(
         -45deg,
@@ -448,10 +707,155 @@ const GlobalMotionStyles = () => (
   `}</style>
 );
 
-// ============================================================================
-// REUSABLE ANIMATION PRIMITIVES
-// ============================================================================
 const EASE = [0.22, 1, 0.36, 1];
+
+// ============================================================================
+// ADVANCED SCROLL PRIMITIVES
+// ============================================================================
+const ScrollProgressLaser = () => {
+  const { scrollYProgress } = useScroll();
+  const scaleX = useSpring(scrollYProgress, {
+    stiffness: 120,
+    damping: 25,
+    restDelta: 0.001,
+  });
+
+  return (
+    <motion.div
+      style={{ scaleX }}
+      className="fixed top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#00684A] via-emerald-400 to-[#C86D2D] origin-left z-50 shadow-[0_0_14px_#10b981]"
+    />
+  );
+};
+
+const LenisTelemetryHUD = ({ activeSection }) => {
+  const { scrollY, scrollYProgress } = useScroll();
+  const velocity = useVelocity(scrollY);
+  const [speed, setSpeed] = useState(0);
+  const [depth, setDepth] = useState(0);
+
+  useMotionValueEvent(velocity, "change", (v) => {
+    setSpeed(Math.min(9999, Math.round(Math.abs(v))));
+  });
+  useMotionValueEvent(scrollYProgress, "change", (p) => {
+    setDepth(Math.round(p * 100));
+  });
+
+  return (
+    <div className="hidden lg:flex fixed bottom-5 left-5 z-40 items-center gap-3 px-4 py-2.5 rounded-2xl bg-slate-950/90 backdrop-blur-md border border-emerald-500/30 text-white shadow-2xl font-mono text-[11px]">
+      <div className="flex items-center gap-1.5">
+        <span
+          className={`w-2 h-2 rounded-full ${
+            speed > 50 ? "bg-amber-400 animate-ping" : "bg-emerald-400"
+          }`}
+        />
+        <span className="text-slate-400">LENIS:</span>
+        <span className="text-emerald-300 font-bold w-14">{speed} px/s</span>
+      </div>
+      <div className="h-3 w-[1px] bg-slate-800" />
+      <div>
+        <span className="text-slate-400">DEPTH: </span>
+        <span className="text-amber-400 font-bold">{depth}%</span>
+      </div>
+      <div className="h-3 w-[1px] bg-slate-800" />
+      <div className="text-emerald-400 uppercase font-bold">
+        SEC // {activeSection}
+      </div>
+    </div>
+  );
+};
+
+const ScrollScrubParagraph = ({ text, className = "" }) => {
+  const containerRef = useRef(null);
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ["start 88%", "end 45%"],
+  });
+  const words = text.split(" ");
+
+  return (
+    <p ref={containerRef} className={`flex flex-wrap ${className}`}>
+      {words.map((word, i) => {
+        const start = i / words.length;
+        const end = start + 1 / words.length;
+        return (
+          <ScrubWord
+            key={i}
+            word={word}
+            progress={scrollYProgress}
+            range={[start, end]}
+          />
+        );
+      })}
+    </p>
+  );
+};
+
+const ScrubWord = ({ word, progress, range }) => {
+  const opacity = useTransform(progress, range, [0.18, 1]);
+  const y = useTransform(progress, range, [8, 0]);
+  return (
+    <motion.span style={{ opacity, y }} className="mr-[0.3em] inline-block">
+      {word}
+    </motion.span>
+  );
+};
+
+const VelocityMarquee = ({ items, baseVelocity = 1.2, dark = true }) => {
+  const baseX = useMotionValue(0);
+  const { scrollY } = useScroll();
+  const scrollVelocity = useVelocity(scrollY);
+  const smoothVelocity = useSpring(scrollVelocity, {
+    damping: 50,
+    stiffness: 400,
+  });
+  const velocityFactor = useTransform(smoothVelocity, [0, 1000], [0, 5], {
+    clamp: false,
+  });
+  const skewVelocity = useTransform(smoothVelocity, [-1000, 1000], [-10, 10]);
+  const directionFactor = useRef(1);
+
+  useAnimationFrame((_, delta) => {
+    let moveBy = directionFactor.current * baseVelocity * (delta / 1000);
+    if (velocityFactor.get() < 0) {
+      directionFactor.current = -1;
+    } else if (velocityFactor.get() > 0) {
+      directionFactor.current = 1;
+    }
+    moveBy += directionFactor.current * moveBy * velocityFactor.get();
+    let next = baseX.get() + moveBy;
+    if (next <= -50) next = 0;
+    if (next > 0) next = -50;
+    baseX.set(next);
+  });
+
+  const x = useTransform(baseX, (v) => `${v}%`);
+
+  return (
+    <div
+      className={`overflow-hidden py-3.5 border-y select-none ${
+        dark
+          ? "bg-slate-950 border-slate-800 text-emerald-300"
+          : "bg-emerald-950 border-emerald-800 text-white"
+      }`}
+    >
+      <motion.div
+        style={{ x, skewX: skewVelocity }}
+        className="flex whitespace-nowrap gap-10 w-max"
+      >
+        {[...items, ...items, ...items, ...items].map((text, idx) => (
+          <div
+            key={idx}
+            className="flex items-center gap-3 text-xs sm:text-sm font-black uppercase tracking-widest"
+          >
+            <span className="w-2 h-2 rounded-full bg-[#C86D2D]" />
+            <span>{text}</span>
+          </div>
+        ))}
+      </motion.div>
+    </div>
+  );
+};
 
 const RevealWords = ({ text, className = "", delay = 0, as: Tag = "span" }) => {
   const words = text.split(" ");
@@ -563,6 +967,7 @@ const MagneticButton = ({
   className = "",
   onClick,
   strength = 0.35,
+  type = "button",
 }) => {
   const ref = useRef(null);
   const x = useMotionValue(0);
@@ -582,6 +987,7 @@ const MagneticButton = ({
 
   return (
     <motion.button
+      type={type}
       ref={ref}
       onMouseMove={handleMouseMove}
       onMouseLeave={reset}
@@ -595,1062 +1001,8 @@ const MagneticButton = ({
   );
 };
 
-const TiltCard = ({ children, className = "" }) => {
-  const ref = useRef(null);
-  const [tilt, setTilt] = useState(
-    "perspective(900px) rotateX(0) rotateY(0) scale3d(1,1,1)",
-  );
-
-  const handleMove = (e) => {
-    const rect = ref.current.getBoundingClientRect();
-    const px = (e.clientX - rect.left) / rect.width - 0.5;
-    const py = (e.clientY - rect.top) / rect.height - 0.5;
-    setTilt(
-      `perspective(900px) rotateY(${px * 12}deg) rotateX(${-py * 12}deg) scale3d(1.03,1.03,1.03)`,
-    );
-  };
-  const reset = () =>
-    setTilt("perspective(900px) rotateX(0) rotateY(0) scale3d(1,1,1)");
-
-  return (
-    <div
-      ref={ref}
-      onMouseMove={handleMove}
-      onMouseLeave={reset}
-      style={{ transform: tilt, transition: "transform 0.25s ease-out" }}
-      className={className}
-    >
-      {children}
-    </div>
-  );
-};
-
 // ============================================================================
-// NEW 1: TOP ASPHALT PAVING + STEAMROLLER SCROLL BAR
-// ============================================================================
-const ScrollProgressBar = () => {
-  const { scrollYProgress } = useScroll();
-  const smoothProgress = useSpring(scrollYProgress, {
-    stiffness: 140,
-    damping: 26,
-    mass: 0.2,
-  });
-  const rollerLeft = useTransform(smoothProgress, [0, 1], ["0%", "97%"]);
-  const wheelRotate = useTransform(smoothProgress, [0, 1], [0, 1440]);
-
-  return (
-    <div className="fixed top-0 left-0 right-0 h-2.5 bg-slate-900/90 z-[70] overflow-visible">
-      {/* Freshly Paved Asphalt Layer */}
-      <motion.div
-        style={{ scaleX: smoothProgress }}
-        className="h-full bg-gradient-to-r from-[#00684A] via-slate-800 to-[#C86D2D] origin-left relative"
-      >
-        <div
-          className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-[2px] opacity-80"
-          style={{
-            backgroundImage:
-              "repeating-linear-gradient(to right, #fbbf24 0, #fbbf24 10px, transparent 10px, transparent 20px)",
-          }}
-        />
-      </motion.div>
-
-      {/* Live Moving Road Roller SVG */}
-      <motion.div
-        style={{ left: rollerLeft }}
-        className="absolute -top-1 -translate-x-1/2 pointer-events-none hidden sm:block"
-      >
-        <div className="relative flex items-center">
-          <svg
-            width="38"
-            height="22"
-            viewBox="0 0 44 26"
-            className="drop-shadow-md"
-          >
-            {/* Chassis & Cab */}
-            <rect x="8" y="4" width="16" height="10" rx="2" fill="#00684A" />
-            <rect x="11" y="6" width="10" height="5" rx="1" fill="#a7f3d0" />
-            {/* Engine Hood */}
-            <path d="M24 8 L36 10 L36 17 L24 17 Z" fill="#C86D2D" />
-            {/* Rear Wheel */}
-            <motion.g
-              style={{ rotate: wheelRotate, originX: "14px", originY: "19px" }}
-            >
-              <circle
-                cx="14"
-                cy="19"
-                r="6"
-                fill="#1e293b"
-                stroke="#94a3b8"
-                strokeWidth="1.5"
-              />
-              <line
-                x1="14"
-                y1="13"
-                x2="14"
-                y2="25"
-                stroke="#94a3b8"
-                strokeWidth="1"
-              />
-              <line
-                x1="8"
-                y1="19"
-                x2="20"
-                y2="19"
-                stroke="#94a3b8"
-                strokeWidth="1"
-              />
-            </motion.g>
-            {/* Front Heavy Steel Drum Roller */}
-            <motion.g
-              style={{ rotate: wheelRotate, originX: "34px", originY: "19px" }}
-            >
-              <circle
-                cx="34"
-                cy="19"
-                r="6.5"
-                fill="#475569"
-                stroke="#f59e0b"
-                strokeWidth="2"
-              />
-              <line
-                x1="34"
-                y1="13"
-                x2="34"
-                y2="25"
-                stroke="#f59e0b"
-                strokeWidth="1.2"
-              />
-            </motion.g>
-          </svg>
-        </div>
-      </motion.div>
-    </div>
-  );
-};
-
-// ============================================================================
-// NEW 2: FIXED LEFT TOWER CRANE HUD (MOVES WITH PAGE SCROLL)
-// ============================================================================
-const ScrollTowerCraneHUD = () => {
-  const { scrollYProgress } = useScroll();
-  const smooth = useSpring(scrollYProgress, { stiffness: 90, damping: 20 });
-
-  // Trolley moves outward along the crane jib as user scrolls
-  const trolleyX = useTransform(smooth, [0, 0.5, 1], [28, 78, 52]);
-  // Cable length extends down as you scroll deeper into the site
-  const cableLength = useTransform(smooth, [0, 1], [24, 155]);
-  const [depthMeters, setDepthMeters] = useState(0);
-
-  useMotionValueEvent(scrollYProgress, "change", (latest) => {
-    setDepthMeters(Math.round(latest * 120));
-  });
-
-  return (
-    <div className="hidden 2xl:flex flex-col items-start fixed left-4 top-28 bottom-10 w-28 z-30 pointer-events-none select-none opacity-90">
-      <div className="bg-slate-900/90 backdrop-blur-md border border-slate-700/80 rounded-2xl p-2.5 shadow-xl text-white w-full">
-        <div className="flex items-center justify-between text-[10px] font-mono text-amber-400 mb-1">
-          <span className="flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-amber-400 beacon-pulse" />
-            CRANE-01
-          </span>
-          <span>{depthMeters}m</span>
-        </div>
-
-        <svg viewBox="0 0 100 220" className="w-full h-56 overflow-visible">
-          {/* Counter-jib & Counterweight */}
-          <rect x="2" y="18" width="18" height="6" rx="1" fill="#475569" />
-          <rect x="4" y="23" width="10" height="9" rx="1" fill="#C86D2D" />
-
-          {/* Tower Mast */}
-          <rect
-            x="18"
-            y="10"
-            width="8"
-            height="200"
-            fill="none"
-            stroke="#00684A"
-            strokeWidth="2"
-          />
-          {/* Mast Cross Bracing */}
-          {Array.from({ length: 12 }).map((_, idx) => (
-            <g key={idx}>
-              <line
-                x1="18"
-                y1={16 + idx * 16}
-                x2="26"
-                y2={24 + idx * 16}
-                stroke="#10b981"
-                strokeWidth="1.2"
-              />
-              <line
-                x1="26"
-                y1={24 + idx * 16}
-                x2="18"
-                y2={32 + idx * 16}
-                stroke="#10b981"
-                strokeWidth="1.2"
-              />
-            </g>
-          ))}
-
-          {/* Top Apex & Pendant Cables */}
-          <polygon points="18,10 26,10 22,0" fill="#C86D2D" />
-          <line
-            x1="22"
-            y1="1"
-            x2="75"
-            y2="18"
-            stroke="#94a3b8"
-            strokeWidth="1"
-          />
-          <line
-            x1="22"
-            y1="1"
-            x2="6"
-            y2="18"
-            stroke="#94a3b8"
-            strokeWidth="1"
-          />
-
-          {/* Horizontal Jib Boom */}
-          <rect
-            x="18"
-            y="18"
-            width="78"
-            height="5"
-            fill="none"
-            stroke="#C86D2D"
-            strokeWidth="1.8"
-          />
-          {Array.from({ length: 8 }).map((_, idx) => (
-            <line
-              key={idx}
-              x1={26 + idx * 9}
-              y1="18"
-              x2={31 + idx * 9}
-              y2="23"
-              stroke="#f59e0b"
-              strokeWidth="1.1"
-            />
-          ))}
-
-          {/* Operator Cab */}
-          <rect x="25" y="24" width="8" height="8" rx="1.5" fill="#f8fafc" />
-          <rect x="27" y="25.5" width="5" height="4" fill="#0ea5e9" />
-
-          {/* Scroll-Controlled Jib Trolley + Hoist Cable + Precast Concrete Block */}
-          <motion.g style={{ x: trolleyX }}>
-            {/* Trolley Car */}
-            <rect x="-5" y="22" width="10" height="4" rx="1" fill="#f59e0b" />
-            {/* Dynamic Hoist Wire */}
-            <motion.line
-              x1="0"
-              y1="26"
-              x2="0"
-              y2={useTransform(cableLength, (l) => 26 + l)}
-              stroke="#e2e8f0"
-              strokeWidth="1.2"
-              strokeDasharray="2 1"
-            />
-            {/* Hook & Suspended Precast Concrete Element */}
-            <motion.g style={{ y: cableLength }}>
-              <circle cx="0" cy="28" r="2.5" fill="#f59e0b" />
-              <rect
-                x="-11"
-                y="31"
-                width="22"
-                height="11"
-                rx="1.5"
-                fill="#00684A"
-                stroke="#a7f3d0"
-                strokeWidth="1"
-              />
-              <text
-                x="0"
-                y="38.5"
-                textAnchor="middle"
-                fill="#ffffff"
-                fontSize="5"
-                fontWeight="bold"
-              >
-                AID R+2
-              </text>
-            </motion.g>
-          </motion.g>
-        </svg>
-
-        <div className="mt-1 pt-1.5 border-t border-slate-800 flex items-center justify-between text-[9px] text-slate-400 font-mono">
-          <span>LOAD: 12.4T</span>
-          <span className="text-emerald-400 font-bold">ACTIVE</span>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// ============================================================================
-// NEW 3: SCROLL-DRIVEN INTERACTIVE CONSTRUCTION SITE PANORAMA SECTION
-// ============================================================================
-const ConstructionPanoramaSection = () => {
-  const containerRef = useRef(null);
-  const { scrollYProgress } = useScroll({
-    target: containerRef,
-    offset: ["start end", "end start"],
-  });
-
-  const smoothScroll = useSpring(scrollYProgress, {
-    stiffness: 100,
-    damping: 24,
-  });
-
-  // 1. Heavy Dump Truck drives across the site road from left to right
-  const truckX = useTransform(smoothScroll, [0.05, 0.85], [-180, 620]);
-  const truckWheelRot = useTransform(smoothScroll, [0.05, 0.85], [0, 1080]);
-  const dumpBedTilt = useTransform(
-    smoothScroll,
-    [0.15, 0.35, 0.55],
-    [0, -22, 0],
-  );
-
-  // 2. Excavator Boom & Bucket dig as user scrolls
-  const boomRotate = useTransform(
-    smoothScroll,
-    [0.1, 0.35, 0.6, 0.85],
-    [-12, 18, -18, 8],
-  );
-  const stickRotate = useTransform(
-    smoothScroll,
-    [0.1, 0.35, 0.6, 0.85],
-    [20, -35, 25, -15],
-  );
-  const bucketRotate = useTransform(
-    smoothScroll,
-    [0.1, 0.35, 0.6, 0.85],
-    [-15, 45, -30, 20],
-  );
-
-  // 3. R+2 Building floors rise progressively with scroll
-  const floor1Scale = useTransform(smoothScroll, [0.12, 0.32], [0, 1]);
-  const floor2Scale = useTransform(smoothScroll, [0.28, 0.48], [0, 1]);
-  const floor3Scale = useTransform(smoothScroll, [0.44, 0.66], [0, 1]);
-  const roofTrussY = useTransform(smoothScroll, [0.55, 0.78], [-60, 0]);
-  const roofTrussOpacity = useTransform(smoothScroll, [0.55, 0.75], [0, 1]);
-
-  // 4. Site Tower Crane Hoist & Trolley
-  const siteTrolleyX = useTransform(smoothScroll, [0.1, 0.75], [-95, 25]);
-  const siteHookY = useTransform(smoothScroll, [0.1, 0.45, 0.75], [20, 75, 35]);
-
-  // Live percentage readout
-  const [completionPct, setCompletionPct] = useState(12);
-  useMotionValueEvent(scrollYProgress, "change", (v) => {
-    const clamped = Math.min(Math.max((v - 0.1) / 0.7, 0), 1);
-    setCompletionPct(Math.round(clamped * 100));
-  });
-
-  return (
-    <section
-      id="site-sim"
-      ref={containerRef}
-      className="relative py-20 lg:py-28 bg-slate-950 text-white overflow-hidden border-b-4 border-[#C86D2D] blueprint-grid-dark"
-    >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Top Engineering Telemetry Header */}
-        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-10">
-          <div>
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/15 border border-emerald-400/30 text-emerald-300 text-xs font-extrabold uppercase tracking-wider">
-              <Activity className="w-4 h-4 text-[#C86D2D]" />
-              <span>Interactive Scroll-Driven Engineering Simulation</span>
-            </div>
-            <h2 className="text-3xl sm:text-4xl font-extrabold mt-3">
-              <RevealWords text="Watch Our Construction Site Come Alive As You Scroll" />
-            </h2>
-            <p className="text-slate-400 text-sm sm:text-base mt-2 max-w-2xl">
-              Scroll up and down to operate our heavy earthmoving fleet, erect
-              the R+2 reinforced concrete structure, and haul aggregate across
-              the Lubumbashi jobsite.
-            </p>
-          </div>
-
-          {/* Live Telemetry Gauges */}
-          <div className="flex items-center gap-4 bg-slate-900/90 border border-slate-800 px-5 py-3.5 rounded-2xl shrink-0">
-            <Gauge className="w-8 h-8 text-[#C86D2D]" />
-            <div>
-              <div className="text-[11px] font-mono uppercase text-slate-400">
-                Structural Erection Progress
-              </div>
-              <div className="text-2xl font-black text-emerald-400 font-mono">
-                {completionPct}% COMPLETE
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Interactive SVG Construction Site Stage */}
-        <div className="relative rounded-3xl bg-gradient-to-b from-slate-900 via-slate-900/95 to-slate-950 border border-slate-800 shadow-2xl overflow-hidden p-4 sm:p-6">
-          {/* Blueprint Corner Coordinates */}
-          <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono text-emerald-400/80 pb-3 border-b border-slate-800/80">
-            <span>SITE: LUBUMBASHI R+2 COMPLEX • SECTOR: HAUT-KATANGA</span>
-            <span>
-              GPS: 11°39&apos;57&quot;S 27°28&apos;35&quot;E • ARMP VERIFIED
-            </span>
-          </div>
-
-          <div className="relative w-full overflow-hidden pt-4">
-            <svg
-              viewBox="0 0 1100 420"
-              className="w-full h-[270px] sm:h-[360px] lg:h-[420px] select-none"
-              preserveAspectRatio="xMidYMax meet"
-            >
-              <defs>
-                <linearGradient id="skyGlow" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#0f172a" />
-                  <stop offset="100%" stopColor="#022c22" stopOpacity="0.4" />
-                </linearGradient>
-                <pattern
-                  id="steelGrid"
-                  width="20"
-                  height="20"
-                  patternUnits="userSpaceOnUse"
-                >
-                  <path
-                    d="M 20 0 L 0 20 M 0 0 L 20 20"
-                    stroke="#10b981"
-                    strokeWidth="1.2"
-                    strokeOpacity="0.45"
-                  />
-                </pattern>
-              </defs>
-
-              {/* Background Sky & Distant City Silhouette */}
-              <rect
-                x="0"
-                y="0"
-                width="1100"
-                height="350"
-                fill="url(#skyGlow)"
-              />
-              <g opacity="0.18" fill="#1e293b">
-                <rect x="40" y="210" width="55" height="140" />
-                <rect x="105" y="240" width="45" height="110" />
-                <rect x="920" y="220" width="60" height="130" />
-                <rect x="990" y="190" width="70" height="160" />
-              </g>
-
-              {/* ============================================================
-                  ZONE 1 (LEFT): HYDRAULIC EXCAVATOR DIGGING EARTHWORKS
-                  ============================================================ */}
-              <g transform="translate(145, 295)">
-                {/* Earth Mound / Aggregate Pile */}
-                <path
-                  d="M -135 55 Q -75 5 -15 55 Z"
-                  fill="#78350f"
-                  stroke="#C86D2D"
-                  strokeWidth="2"
-                />
-                <path d="M -105 55 Q -60 22 -20 55 Z" fill="#92400e" />
-
-                {/* Excavator Tracks */}
-                <rect
-                  x="0"
-                  y="32"
-                  width="92"
-                  height="22"
-                  rx="11"
-                  fill="#1e293b"
-                  stroke="#64748b"
-                  strokeWidth="2.5"
-                />
-                {[14, 32, 50, 68, 78].map((cx, i) => (
-                  <circle key={i} cx={cx} cy="43" r="6" fill="#475569" />
-                ))}
-
-                {/* Excavator House / Cab */}
-                <rect
-                  x="10"
-                  y="0"
-                  width="68"
-                  height="32"
-                  rx="5"
-                  fill="#C86D2D"
-                />
-                <rect
-                  x="16"
-                  y="5"
-                  width="24"
-                  height="18"
-                  rx="3"
-                  fill="#0f172a"
-                />
-                <text
-                  x="55"
-                  y="20"
-                  textAnchor="middle"
-                  fill="#ffffff"
-                  fontSize="9"
-                  fontWeight="bold"
-                >
-                  AID
-                </text>
-
-                {/* Articulated Main Boom (Scroll-Driven) */}
-                <motion.g
-                  style={{
-                    rotate: boomRotate,
-                    originX: "20px",
-                    originY: "14px",
-                  }}
-                >
-                  <path
-                    d="M 20 14 L -35 -45 L -22 -52 L 30 8 Z"
-                    fill="#f59e0b"
-                    stroke="#78350f"
-                    strokeWidth="1.5"
-                  />
-                  {/* Forearm Stick */}
-                  <motion.g
-                    style={{
-                      rotate: stickRotate,
-                      originX: "-28px",
-                      originY: "-48px",
-                    }}
-                  >
-                    <rect
-                      x="-34"
-                      y="-48"
-                      width="11"
-                      height="64"
-                      rx="4"
-                      fill="#C86D2D"
-                    />
-                    {/* Digging Bucket */}
-                    <motion.g
-                      style={{
-                        rotate: bucketRotate,
-                        originX: "-28px",
-                        originY: "14px",
-                      }}
-                    >
-                      <path
-                        d="M -28 14 L -52 14 Q -56 36 -30 34 L -22 22 Z"
-                        fill="#334155"
-                        stroke="#f59e0b"
-                        strokeWidth="2"
-                      />
-                    </motion.g>
-                  </motion.g>
-                </motion.g>
-              </g>
-
-              {/* ============================================================
-                  ZONE 2 (CENTER-RIGHT): R+2 PALAIS DE JUSTICE BUILDING ERECTION
-                  ============================================================ */}
-              <g transform="translate(560, 0)">
-                {/* Reinforced Concrete Foundation Pad */}
-                <rect
-                  x="0"
-                  y="336"
-                  width="270"
-                  height="16"
-                  rx="2"
-                  fill="#334155"
-                  stroke="#10b981"
-                  strokeWidth="1.5"
-                />
-                <text
-                  x="135"
-                  y="347"
-                  textAnchor="middle"
-                  fill="#a7f3d0"
-                  fontSize="8"
-                  fontFamily="monospace"
-                >
-                  SEISMIC FOUNDATION SLAB • ISO 9001
-                </text>
-
-                {/* FLOOR 1 (Ground Level - Scales Up First) */}
-                <motion.g
-                  style={{
-                    scaleY: floor1Scale,
-                    originX: "135px",
-                    originY: "336px",
-                  }}
-                >
-                  <rect
-                    x="12"
-                    y="270"
-                    width="246"
-                    height="66"
-                    fill="#064e3b"
-                    fillOpacity="0.75"
-                    stroke="#10b981"
-                    strokeWidth="2"
-                  />
-                  {[35, 80, 125, 170, 215].map((wx, idx) => (
-                    <rect
-                      key={idx}
-                      x={wx}
-                      y="282"
-                      width="24"
-                      height="42"
-                      rx="2"
-                      fill="#022c22"
-                      stroke="#34d399"
-                      strokeWidth="1.2"
-                    />
-                  ))}
-                  <text
-                    x="248"
-                    y="265"
-                    textAnchor="end"
-                    fill="#34d399"
-                    fontSize="9"
-                    fontFamily="monospace"
-                  >
-                    LEVEL R+0
-                  </text>
-                </motion.g>
-
-                {/* FLOOR 2 (First Floor - Scales Up Second) */}
-                <motion.g
-                  style={{
-                    scaleY: floor2Scale,
-                    originX: "135px",
-                    originY: "270px",
-                  }}
-                >
-                  <rect
-                    x="12"
-                    y="204"
-                    width="246"
-                    height="66"
-                    fill="#065f46"
-                    fillOpacity="0.8"
-                    stroke="#10b981"
-                    strokeWidth="2"
-                  />
-                  {[35, 80, 125, 170, 215].map((wx, idx) => (
-                    <rect
-                      key={idx}
-                      x={wx}
-                      y="216"
-                      width="24"
-                      height="42"
-                      rx="2"
-                      fill="#0f172a"
-                      stroke="#fbbf24"
-                      strokeWidth="1.2"
-                    />
-                  ))}
-                  <text
-                    x="248"
-                    y="199"
-                    textAnchor="end"
-                    fill="#fbbf24"
-                    fontSize="9"
-                    fontFamily="monospace"
-                  >
-                    LEVEL R+1
-                  </text>
-                </motion.g>
-
-                {/* FLOOR 3 (Second Floor R+2 - Scales Up Third) */}
-                <motion.g
-                  style={{
-                    scaleY: floor3Scale,
-                    originX: "135px",
-                    originY: "204px",
-                  }}
-                >
-                  <rect
-                    x="12"
-                    y="138"
-                    width="246"
-                    height="66"
-                    fill="url(#steelGrid)"
-                    stroke="#C86D2D"
-                    strokeWidth="2.2"
-                  />
-                  {[35, 80, 125, 170, 215].map((wx, idx) => (
-                    <rect
-                      key={idx}
-                      x={wx}
-                      y="150"
-                      width="24"
-                      height="40"
-                      rx="2"
-                      fill="#1e293b"
-                      fillOpacity="0.85"
-                      stroke="#f59e0b"
-                      strokeWidth="1.2"
-                    />
-                  ))}
-                  <text
-                    x="248"
-                    y="133"
-                    textAnchor="end"
-                    fill="#f59e0b"
-                    fontSize="9"
-                    fontFamily="monospace"
-                  >
-                    LEVEL R+2
-                  </text>
-                </motion.g>
-
-                {/* Crown Pediment / Roof Truss Lowered into Place */}
-                <motion.g style={{ y: roofTrussY, opacity: roofTrussOpacity }}>
-                  <polygon
-                    points="4,138 135,96 266,138"
-                    fill="#00684A"
-                    stroke="#f59e0b"
-                    strokeWidth="2.5"
-                  />
-                  <rect
-                    x="75"
-                    y="118"
-                    width="120"
-                    height="15"
-                    rx="3"
-                    fill="#0f172a"
-                  />
-                  <text
-                    x="135"
-                    y="129"
-                    textAnchor="middle"
-                    fill="#fbbf24"
-                    fontSize="8.5"
-                    fontWeight="bold"
-                  >
-                    PALAIS DE JUSTICE • AID
-                  </text>
-                </motion.g>
-              </g>
-
-              {/* ============================================================
-                  ZONE 3: GIANT TOWER CRANE OVERSEING THE R+2 STRUCTURE
-                  ============================================================ */}
-              <g transform="translate(885, 0)">
-                {/* Crane Base & Mast */}
-                <rect x="-18" y="332" width="36" height="18" fill="#475569" />
-                <rect
-                  x="-10"
-                  y="38"
-                  width="20"
-                  height="294"
-                  fill="url(#steelGrid)"
-                  stroke="#00684A"
-                  strokeWidth="2.5"
-                />
-                {/* Slewing Unit & Jib Boom */}
-                <polygon points="-12,38 12,38 0,14" fill="#C86D2D" />
-                <line
-                  x1="0"
-                  y1="15"
-                  x2="-210"
-                  y2="42"
-                  stroke="#94a3b8"
-                  strokeWidth="1.5"
-                />
-                <line
-                  x1="0"
-                  y1="15"
-                  x2="75"
-                  y2="42"
-                  stroke="#94a3b8"
-                  strokeWidth="1.5"
-                />
-                {/* Main Horizontal Jib */}
-                <rect
-                  x="-265"
-                  y="42"
-                  width="355"
-                  height="9"
-                  fill="url(#steelGrid)"
-                  stroke="#C86D2D"
-                  strokeWidth="2"
-                />
-                {/* Counterweight Blocks */}
-                <rect
-                  x="58"
-                  y="51"
-                  width="24"
-                  height="18"
-                  rx="2"
-                  fill="#f59e0b"
-                />
-
-                {/* Moving Trolley & Suspended Steel Girder */}
-                <motion.g style={{ x: siteTrolleyX }}>
-                  <rect
-                    x="-165"
-                    y="50"
-                    width="22"
-                    height="7"
-                    rx="2"
-                    fill="#f59e0b"
-                  />
-                  <motion.line
-                    x1="-154"
-                    y1="57"
-                    x2="-154"
-                    y2={useTransform(siteHookY, (v) => 57 + v)}
-                    stroke="#e2e8f0"
-                    strokeWidth="1.8"
-                  />
-                  <motion.g style={{ y: siteHookY }}>
-                    <line
-                      x1="-154"
-                      y1="57"
-                      x2="-184"
-                      y2="72"
-                      stroke="#fbbf24"
-                      strokeWidth="1.4"
-                    />
-                    <line
-                      x1="-154"
-                      y1="57"
-                      x2="-124"
-                      y2="72"
-                      stroke="#fbbf24"
-                      strokeWidth="1.4"
-                    />
-                    {/* Suspended Steel I-Beam */}
-                    <rect
-                      x="-200"
-                      y="72"
-                      width="92"
-                      height="12"
-                      rx="2"
-                      fill="#C86D2D"
-                      stroke="#fde68a"
-                      strokeWidth="1.5"
-                    />
-                    <text
-                      x="-154"
-                      y="81"
-                      textAnchor="middle"
-                      fill="#ffffff"
-                      fontSize="7"
-                      fontWeight="bold"
-                    >
-                      AID STEEL BEAM
-                    </text>
-                  </motion.g>
-                </motion.g>
-              </g>
-
-              {/* ============================================================
-                  ZONE 4 (BOTTOM): PAVED ASPHALT ROAD + MOVING DUMP TRUCK
-                  ============================================================ */}
-              <g transform="translate(0, 350)">
-                {/* Road Sub-base & Hot-Mix Asphalt Surface */}
-                <rect x="0" y="0" width="1100" height="70" fill="#1e293b" />
-                <line
-                  x1="0"
-                  y1="3"
-                  x2="1100"
-                  y2="3"
-                  stroke="#00684A"
-                  strokeWidth="4"
-                />
-                <line
-                  x1="0"
-                  y1="36"
-                  x2="1100"
-                  y2="36"
-                  stroke="#fbbf24"
-                  strokeWidth="3"
-                  strokeDasharray="28 20"
-                />
-
-                {/* Scroll-Driven Heavy Dump Truck */}
-                <motion.g style={{ x: truckX }} transform="translate(180, -32)">
-                  {/* Tilting Dump Bed */}
-                  <motion.g
-                    style={{
-                      rotate: dumpBedTilt,
-                      originX: "18px",
-                      originY: "42px",
-                    }}
-                  >
-                    {/* Aggregate Load Inside Bed */}
-                    <path d="M 14 14 Q 45 -2 78 14 Z" fill="#d97706" />
-                    <polygon
-                      points="6,12 88,12 82,42 12,42"
-                      fill="#00684A"
-                      stroke="#34d399"
-                      strokeWidth="2"
-                    />
-                    <text
-                      x="47"
-                      y="31"
-                      textAnchor="middle"
-                      fill="#ffffff"
-                      fontSize="10"
-                      fontWeight="bold"
-                    >
-                      AID FLEET
-                    </text>
-                  </motion.g>
-
-                  {/* Truck Cab & Chassis */}
-                  <rect
-                    x="10"
-                    y="42"
-                    width="108"
-                    height="8"
-                    rx="2"
-                    fill="#334155"
-                  />
-                  <path
-                    d="M 88 18 L 114 18 L 122 32 L 122 48 L 88 48 Z"
-                    fill="#C86D2D"
-                    stroke="#fbbf24"
-                    strokeWidth="1.5"
-                  />
-                  <polygon points="94,22 111,22 117,32 94,32" fill="#bae6fd" />
-
-                  {/* Rotating Heavy-Duty Wheels */}
-                  {[26, 52, 104].map((wx, i) => (
-                    <motion.g
-                      key={i}
-                      style={{
-                        rotate: truckWheelRot,
-                        originX: `${wx}px`,
-                        originY: "52px",
-                      }}
-                    >
-                      <circle
-                        cx={wx}
-                        cy="52"
-                        r="11"
-                        fill="#0f172a"
-                        stroke="#94a3b8"
-                        strokeWidth="3"
-                      />
-                      <line
-                        x1={wx - 7}
-                        y1="52"
-                        x2={wx + 7}
-                        y2="52"
-                        stroke="#f59e0b"
-                        strokeWidth="2"
-                      />
-                      <line
-                        x1={wx}
-                        y1="45"
-                        x2={wx}
-                        y2="59"
-                        stroke="#f59e0b"
-                        strokeWidth="2"
-                      />
-                    </motion.g>
-                  ))}
-                </motion.g>
-              </g>
-            </svg>
-          </div>
-
-          {/* Interactive Legend Bar */}
-          <div className="mt-4 pt-4 border-t border-slate-800 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-            <div className="flex items-center gap-2 text-slate-300">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#C86D2D]" />
-              <span>Excavator: Geotechnical Earthworks</span>
-            </div>
-            <div className="flex items-center gap-2 text-slate-300">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
-              <span>R+2 Complex: Progressive Floor Erection</span>
-            </div>
-            <div className="flex items-center gap-2 text-slate-300">
-              <span className="w-2.5 h-2.5 rounded-full bg-amber-400" />
-              <span>Tower Crane: Heavy Structural Hoist</span>
-            </div>
-            <div className="flex items-center gap-2 text-slate-300">
-              <span className="w-2.5 h-2.5 rounded-full bg-sky-400" />
-              <span>65+ Fleet: Autonomous Haulage</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-};
-
-// ============================================================================
-// NEW 4: SCROLL-LINKED ROAD PAVER & ASPHALT ROLLER SECTION DIVIDER
-// ============================================================================
-const RoadPaverDivider = ({
-  label = "URBAN ROADWAY & HOT-MIX ASPHALT DIVISION",
-}) => {
-  const ref = useRef(null);
-  const { scrollYProgress } = useScroll({
-    target: ref,
-    offset: ["start end", "end start"],
-  });
-  const paverX = useTransform(scrollYProgress, [0, 1], ["-10%", "85%"]);
-  const asphaltWidth = useTransform(scrollYProgress, [0, 1], ["5%", "95%"]);
-
-  return (
-    <div
-      ref={ref}
-      className="relative h-20 bg-slate-900 border-y border-slate-800 overflow-hidden flex items-center select-none"
-    >
-      {/* Newly laid asphalt mat that grows with scroll */}
-      <motion.div
-        style={{ width: asphaltWidth }}
-        className="absolute left-0 top-0 bottom-0 bg-gradient-to-r from-slate-950 via-slate-900 to-[#00684A]/40 border-r-4 border-[#C86D2D]"
-      >
-        <div
-          className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-1 opacity-70"
-          style={{
-            backgroundImage:
-              "repeating-linear-gradient(to right, #f59e0b 0, #f59e0b 24px, transparent 24px, transparent 48px)",
-          }}
-        />
-      </motion.div>
-
-      <div className="relative z-10 max-w-7xl mx-auto px-4 w-full flex items-center justify-between pointer-events-none">
-        <span className="px-3 py-1 rounded bg-slate-950/90 border border-slate-700 text-[11px] font-mono font-bold text-amber-300 tracking-wider">
-          {label}
-        </span>
-        <span className="hidden sm:inline-block px-3 py-1 rounded bg-slate-950/90 border border-slate-700 text-[11px] font-mono text-emerald-400">
-          SCROLL TO COMPACT SUB-BASE
-        </span>
-      </div>
-
-      {/* Moving Heavy Asphalt Paver Machine */}
-      <motion.div
-        style={{ left: paverX }}
-        className="absolute bottom-1 z-20 pointer-events-none"
-      >
-        <svg width="110" height="52" viewBox="0 0 120 56">
-          {/* Screed & Hopper */}
-          <polygon points="8,26 42,16 42,40 8,40" fill="#00684A" />
-          <rect x="42" y="10" width="44" height="30" rx="3" fill="#C86D2D" />
-          <rect x="52" y="14" width="22" height="14" rx="2" fill="#fde68a" />
-          {/* Canopy */}
-          <rect x="46" y="4" width="34" height="4" rx="1" fill="#0f172a" />
-          {/* Crawler Tracks */}
-          <rect
-            x="36"
-            y="38"
-            width="54"
-            height="12"
-            rx="6"
-            fill="#1e293b"
-            stroke="#94a3b8"
-            strokeWidth="2"
-          />
-          <circle cx="46" cy="44" r="4" fill="#f59e0b" />
-          <circle cx="63" cy="44" r="4" fill="#f59e0b" />
-          <circle cx="80" cy="44" r="4" fill="#f59e0b" />
-        </svg>
-      </motion.div>
-    </div>
-  );
-};
-
-// ============================================================================
-// SIDE DOT NAVIGATION
+// NAVIGATION
 // ============================================================================
 const SideDotNav = ({ activeSection, scrollToSection }) => (
   <div className="hidden xl:flex flex-col gap-3.5 fixed right-6 top-1/2 -translate-y-1/2 z-40">
@@ -1677,9 +1029,6 @@ const SideDotNav = ({ activeSection, scrollToSection }) => (
   </div>
 );
 
-// ============================================================================
-// HEADER
-// ============================================================================
 const Header = ({
   activeSection,
   scrollToSection,
@@ -1801,7 +1150,7 @@ const Header = ({
 );
 
 // ============================================================================
-// 1. HERO (WITH ANIMATED SKYLINE CRANE SILHOUETTE)
+// 1. HERO SECTION — 3D MULTI-PLANE PARALLAX & SPLIT CURTAIN SCROLL
 // ============================================================================
 const HeroSection = ({ scrollToSection }) => {
   const ref = useRef(null);
@@ -1809,10 +1158,19 @@ const HeroSection = ({ scrollToSection }) => {
     target: ref,
     offset: ["start start", "end start"],
   });
-  const bgY = useTransform(scrollYProgress, [0, 1], ["0%", "25%"]);
-  const fade = useTransform(scrollYProgress, [0, 1], [1, 0.2]);
-  const cardY = useTransform(scrollYProgress, [0, 1], [0, 80]);
-  const craneBoomShift = useTransform(scrollYProgress, [0, 1], [0, 45]);
+  const smoothScroll = useSpring(scrollYProgress, {
+    stiffness: 100,
+    damping: 24,
+  });
+
+  const bgY = useTransform(smoothScroll, [0, 1], ["0%", "34%"]);
+  const bgScale = useTransform(smoothScroll, [0, 1], [1.08, 1.28]);
+  const fade = useTransform(smoothScroll, [0, 0.85], [1, 0]);
+  const leftColX = useTransform(smoothScroll, [0, 1], [0, -70]);
+  const rightCardY = useTransform(smoothScroll, [0, 1], [0, 110]);
+  const rightCardRotateX = useTransform(smoothScroll, [0, 1], [0, 18]);
+  const rightCardRotateY = useTransform(smoothScroll, [0, 1], [0, -14]);
+  const craneBoomShift = useTransform(smoothScroll, [0, 1], [0, 95]);
 
   const stats = [
     {
@@ -1846,13 +1204,11 @@ const HeroSection = ({ scrollToSection }) => {
       ref={ref}
       id="home"
       className="relative overflow-hidden bg-slate-950 text-white pt-14 pb-24 lg:py-28"
+      style={{ perspective: 1200 }}
     >
       <motion.div
-        style={{ y: bgY, opacity: fade }}
-        className="absolute inset-0 bg-cover bg-center scale-110"
-        initial={{ scale: 1.15 }}
-        animate={{ scale: 1.1 }}
-        transition={{ duration: 2, ease: EASE }}
+        style={{ y: bgY, scale: bgScale, opacity: fade }}
+        className="absolute inset-0 bg-cover bg-center"
       >
         <div
           className="absolute inset-0 bg-cover bg-center opacity-30"
@@ -1863,11 +1219,10 @@ const HeroSection = ({ scrollToSection }) => {
       </motion.div>
       <div className="absolute inset-0 bg-gradient-to-r from-[#003928]/95 via-[#004D36]/85 to-slate-950/90" />
 
-      {/* Scroll-Parallax Background Construction Cranes */}
       <motion.svg
         style={{ x: craneBoomShift }}
         viewBox="0 0 600 320"
-        className="absolute right-0 top-6 w-[480px] h-[260px] opacity-15 pointer-events-none hidden lg:block"
+        className="absolute right-0 top-6 w-[480px] h-[260px] opacity-20 pointer-events-none hidden lg:block"
       >
         <line
           x1="420"
@@ -1913,13 +1268,15 @@ const HeroSection = ({ scrollToSection }) => {
         <rect x="205" y="170" width="50" height="22" fill="#C86D2D" />
       </motion.svg>
 
-      {/* Floating decorative blobs */}
       <div className="absolute -top-20 -left-20 w-96 h-96 rounded-full bg-emerald-500/20 blur-3xl blob-anim pointer-events-none" />
       <div className="absolute bottom-0 right-0 w-[28rem] h-[28rem] rounded-full bg-orange-500/10 blur-3xl blob-anim-delay pointer-events-none" />
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid lg:grid-cols-12 gap-12 items-center">
-          <div className="lg:col-span-7 space-y-6">
+          <motion.div
+            style={{ x: leftColX, opacity: fade }}
+            className="lg:col-span-7 space-y-6"
+          >
             <motion.div
               initial={{ opacity: 0, y: -16 }}
               animate={{ opacity: 1, y: 0 }}
@@ -1939,26 +1296,14 @@ const HeroSection = ({ scrollToSection }) => {
               />
             </h1>
 
-            <motion.p
-              initial={{ opacity: 0 }}
-              whileInView={{ opacity: 1 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.5, duration: 0.8 }}
-              className="text-base sm:text-lg text-emerald-50/90 max-w-2xl leading-relaxed"
-            >
+            <p className="text-base sm:text-lg text-emerald-50/90 max-w-2xl leading-relaxed">
               Africa Infrastructures Développement SARL (AID) is a premier civil
               engineering, building construction, and urban road modernization
               company delivering landmark institutional and industrial projects
               across the Democratic Republic of the Congo.
-            </motion.p>
+            </p>
 
-            <motion.div
-              initial={{ opacity: 0, x: -30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.6, duration: 0.7, ease: EASE }}
-              className="p-4 rounded-2xl bg-white/10 backdrop-blur-md border-l-4 border-[#C86D2D] max-w-xl"
-            >
+            <div className="p-4 rounded-2xl bg-white/10 backdrop-blur-md border-l-4 border-[#C86D2D] max-w-xl">
               <div className="text-xs font-bold uppercase tracking-wider text-amber-300">
                 Landmark Achievement • Lubumbashi
               </div>
@@ -1966,15 +1311,9 @@ const HeroSection = ({ scrollToSection }) => {
                 Constructor of the New Palais de Justice of Lubumbashi (R+2) &
                 Provincial Road Modernization
               </div>
-            </motion.div>
+            </div>
 
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.75, duration: 0.6 }}
-              className="flex flex-wrap items-center gap-4 pt-2"
-            >
+            <div className="flex flex-wrap items-center gap-4 pt-2">
               <MagneticButton
                 onClick={() => scrollToSection("work")}
                 className="px-7 py-4 rounded-xl bg-[#C86D2D] hover:bg-[#b55e22] text-white font-bold text-sm sm:text-base shadow-xl shadow-orange-950/40 transition-colors flex items-center gap-2.5 group"
@@ -1989,18 +1328,19 @@ const HeroSection = ({ scrollToSection }) => {
                 <span>Interactive Site Simulation</span>
                 <ChevronRight className="w-4 h-4 text-amber-400" />
               </MagneticButton>
-            </motion.div>
-          </div>
+            </div>
+          </motion.div>
 
-          <motion.div style={{ y: cardY }} className="lg:col-span-5">
-            <motion.div
-              initial={{ opacity: 0, rotateY: -25, x: 60 }}
-              whileInView={{ opacity: 1, rotateY: 0, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.9, ease: EASE }}
-              style={{ transformStyle: "preserve-3d" }}
-              className="bg-white rounded-3xl p-6 sm:p-8 shadow-2xl border-t-8 border-[#C86D2D] text-slate-900 relative"
-            >
+          <motion.div
+            style={{
+              y: rightCardY,
+              rotateX: rightCardRotateX,
+              rotateY: rightCardRotateY,
+              transformStyle: "preserve-3d",
+            }}
+            className="lg:col-span-5"
+          >
+            <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-2xl border-t-8 border-[#C86D2D] text-slate-900 relative">
               <div className="absolute -top-4 right-6 bg-[#00684A] text-white text-[11px] font-bold px-3.5 py-1 rounded-full shadow">
                 OFFICIAL CORPORATE IDENTITY
               </div>
@@ -2026,7 +1366,7 @@ const HeroSection = ({ scrollToSection }) => {
                   </StaggerItem>
                 ))}
               </StaggerGroup>
-            </motion.div>
+            </div>
           </motion.div>
         </div>
 
@@ -2037,7 +1377,7 @@ const HeroSection = ({ scrollToSection }) => {
           className="hidden lg:flex items-center gap-2 mx-auto mt-16 text-emerald-200/70 text-xs font-semibold"
         >
           <MousePointer2 className="w-4 h-4" />
-          Scroll to operate live construction site
+          Scroll to operate 3D structural twin & phase wheel
         </motion.button>
       </div>
     </section>
@@ -2045,50 +1385,516 @@ const HeroSection = ({ scrollToSection }) => {
 };
 
 // ============================================================================
-// 2. ABOUT
+// 1.5 UPGRADED: 3D ISOMETRIC EXPLODED STRUCTURAL CORE (LEFT) +
+//     3D REVOLVING CYLINDER / ROLODEX PHASE DRUM (RIGHT)
 // ============================================================================
-const AboutSection = () => {
-  const imgRef = useRef(null);
-  const isInView = useInView(imgRef, { once: true, margin: "-100px" });
+const IsometricLayerSlab = ({
+  phase,
+  index,
+  activePhaseIdx,
+  smoothProgress,
+}) => {
+  const isActive = index === activePhaseIdx;
+  const isUnlocked = index <= activePhaseIdx;
+
+  // Scroll-scrubbed vertical explosion spacing between isometric slabs
+  const baseOffsets = [110, 55, 0, -55, -110];
+  const explodedOffsets = [148, 74, 0, -74, -148];
+  const y = useTransform(
+    smoothProgress,
+    [0, 0.5, 1],
+    [
+      baseOffsets[index] * 0.55,
+      explodedOffsets[index],
+      baseOffsets[index] * 1.15,
+    ],
+  );
+
+  return (
+    <motion.div
+      style={{
+        y,
+        zIndex: index + 10,
+      }}
+      animate={{
+        scale: isActive ? 1.08 : isUnlocked ? 0.96 : 0.86,
+        opacity: isUnlocked ? 1 : 0.28,
+      }}
+      transition={{ type: "spring", stiffness: 220, damping: 22 }}
+      className="absolute inset-0 flex items-center justify-center pointer-events-none"
+    >
+      {/* 3D Isometric Tilted Slab */}
+      <div
+        style={{
+          transform: "rotateX(58deg) rotateZ(-38deg)",
+          transformStyle: "preserve-3d",
+          borderColor: isActive ? phase.accent : "rgba(148, 163, 184, 0.3)",
+          boxShadow: isActive
+            ? `0 24px 45px -10px ${phase.accent}55, inset 0 0 28px ${phase.accent}44`
+            : "0 14px 25px -10px rgba(0,0,0,0.7)",
+        }}
+        className={`w-56 h-56 sm:w-64 sm:h-64 rounded-3xl border-2 backdrop-blur-md transition-colors duration-300 relative flex flex-col justify-between p-4 ${
+          isActive
+            ? "bg-slate-900/90"
+            : isUnlocked
+              ? "bg-slate-900/65"
+              : "bg-slate-950/40"
+        }`}
+      >
+        {/* Internal Isometric CAD Wireframe Pattern */}
+        <div className="flex items-center justify-between text-[10px] font-mono">
+          <span
+            style={{ color: phase.accent }}
+            className="font-black tracking-wider"
+          >
+            {phase.code}
+          </span>
+          <span className="px-1.5 py-0.5 rounded bg-white/10 text-white font-bold">
+            {phase.step}
+          </span>
+        </div>
+
+        {/* Distinct visual schematic inside each slab */}
+        <div className="my-auto grid grid-cols-3 gap-2 opacity-85">
+          {[...Array(6)].map((_, i) => (
+            <div
+              key={i}
+              style={{
+                borderColor: isActive ? phase.accent : "rgba(255,255,255,0.15)",
+                backgroundColor:
+                  isActive && i % 2 === 0
+                    ? `${phase.accent}33`
+                    : "rgba(15,23,42,0.6)",
+              }}
+              className="h-7 rounded-lg border flex items-center justify-center"
+            >
+              <div
+                style={{ backgroundColor: phase.accent }}
+                className="w-1.5 h-1.5 rounded-full"
+              />
+            </div>
+          ))}
+        </div>
+
+        <div className="text-[10px] font-mono text-white/90 font-bold truncate border-t border-white/10 pt-1.5">
+          {phase.layerLabel}
+        </div>
+
+        {/* 3D Slab Thickness Extrusion Edge */}
+        <div
+          style={{
+            backgroundColor: isActive ? phase.accent : "#1e293b",
+          }}
+          className="absolute -bottom-2.5 left-2 right-2 h-2.5 rounded-b-xl opacity-80"
+        />
+      </div>
+    </motion.div>
+  );
+};
+
+// Right-Side 3D Revolving Cylinder / Rolodex Card
+const PhaseWheelCard = ({ phase, index, smoothProgress, activePhaseIdx }) => {
+  const total = SITE_SIMULATION_PHASES.length;
+  const centerPoint = index / (total - 1); // 0, 0.25, 0.5, 0.75, 1.0
+
+  // Continuous distance from current scroll progress
+  const relativeOffset = useTransform(smoothProgress, (v) => v - centerPoint);
+
+  // 3D Drum transformations driven directly by scroll
+  const y = useTransform(relativeOffset, [-0.5, 0, 0.5], [190, 0, -190]);
+  const scale = useTransform(
+    relativeOffset,
+    [-0.45, -0.2, 0, 0.2, 0.45],
+    [0.76, 0.9, 1.03, 0.9, 0.76],
+  );
+  const opacity = useTransform(
+    relativeOffset,
+    [-0.48, -0.22, 0, 0.22, 0.48],
+    [0, 0.45, 1, 0.45, 0],
+  );
+  const rotateX = useTransform(relativeOffset, [-0.45, 0, 0.45], [-38, 0, 38]);
+  const z = useTransform(relativeOffset, [-0.45, 0, 0.45], [-140, 30, -140]);
+
+  // Individual phase completion progress bar
+  const segStart = index / total;
+  const segEnd = (index + 1) / total;
+  const stageFill = useTransform(
+    smoothProgress,
+    [segStart, segEnd],
+    ["0%", "100%"],
+  );
+
+  const isActive = index === activePhaseIdx;
+
+  return (
+    <motion.div
+      style={{
+        y,
+        scale,
+        opacity,
+        rotateX,
+        z,
+        zIndex: isActive ? 30 : 20 - Math.abs(index - activePhaseIdx),
+        transformPerspective: 1100,
+      }}
+      className="absolute inset-x-0 mx-auto max-w-xl pointer-events-auto"
+    >
+      <div
+        className={`rounded-3xl p-6 sm:p-7 border-2 transition-all duration-300 backdrop-blur-xl ${
+          isActive
+            ? "bg-slate-900/95 border-emerald-400 shadow-[0_20px_60px_-15px_rgba(16,185,129,0.4)]"
+            : "bg-slate-900/70 border-slate-800/80"
+        }`}
+      >
+        {/* Top Row: Step Badge + Code + Load Spec */}
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+          <div className="flex items-center gap-2.5">
+            <span
+              style={{
+                backgroundColor: isActive ? phase.accent : "#1e293b",
+              }}
+              className="px-3 py-1 rounded-xl text-slate-950 font-mono font-black text-xs shadow"
+            >
+              PHASE {phase.step}
+            </span>
+            <span className="font-mono text-xs text-emerald-300 font-bold">
+              {phase.code}
+            </span>
+          </div>
+          <span className="px-3 py-1 rounded-full bg-slate-950 text-amber-300 font-mono text-[11px] font-bold border border-amber-400/30">
+            {phase.load}
+          </span>
+        </div>
+
+        {/* Title & Description */}
+        <h3 className="text-lg sm:text-xl font-extrabold text-white leading-snug">
+          {phase.title}
+        </h3>
+        <p className="text-xs sm:text-sm text-slate-300 mt-2 leading-relaxed">
+          {phase.desc}
+        </p>
+
+        {/* 3 Engineering Spec Pills */}
+        <div className="grid sm:grid-cols-3 gap-2 mt-4">
+          {phase.specs.map((spec, sIdx) => (
+            <div
+              key={sIdx}
+              className="px-3 py-2 rounded-xl bg-slate-950/90 border border-slate-800 text-[11px] text-slate-200 flex items-center gap-1.5 font-medium"
+            >
+              <CheckCircle2
+                style={{ color: phase.accent }}
+                className="w-3.5 h-3.5 shrink-0"
+              />
+              <span className="truncate">{spec}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Bottom Telemetry Metrics + Scroll-Scrubbed Stage Bar */}
+        <div className="mt-4 pt-3 border-t border-slate-800/90 space-y-2">
+          <div className="flex items-center justify-between text-[11px] font-mono">
+            <span className="text-emerald-400 font-bold">
+              QC TARGET: {phase.metric}
+            </span>
+            <span className="text-slate-400">ELEV: {phase.depth}</span>
+          </div>
+          <div className="w-full h-1.5 bg-slate-950 rounded-full overflow-hidden border border-slate-800">
+            <motion.div
+              style={{
+                width: stageFill,
+                backgroundColor: phase.accent,
+              }}
+              className="h-full rounded-full"
+            />
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
+const InteractiveSiteSimulation = () => {
+  const containerRef = useRef(null);
+  const [activePhaseIdx, setActivePhaseIdx] = useState(0);
+
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ["start start", "end end"],
+  });
+
+  const smoothProgress = useSpring(scrollYProgress, {
+    stiffness: 90,
+    damping: 24,
+  });
+
+  useMotionValueEvent(smoothProgress, "change", (v) => {
+    const idx = Math.min(
+      SITE_SIMULATION_PHASES.length - 1,
+      Math.max(0, Math.round(v * (SITE_SIMULATION_PHASES.length - 1))),
+    );
+    setActivePhaseIdx(idx);
+  });
+
+  const radarRotate = useTransform(smoothProgress, [0, 1], [0, 360]);
+  const radarReverse = useTransform(smoothProgress, [0, 1], [360, 0]);
+  const percentText = useTransform(
+    smoothProgress,
+    (v) => `${Math.min(100, Math.round(v * 100))}%`,
+  );
+
+  const activePhase = SITE_SIMULATION_PHASES[activePhaseIdx];
 
   return (
     <section
+      ref={containerRef}
+      id="site-sim"
+      className="relative h-[380vh] bg-slate-950 text-white blueprint-grid-dark border-t border-slate-800"
+    >
+      <div className="sticky top-24 h-[calc(100vh-6rem)] flex flex-col justify-between overflow-hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {/* Top Engineering Command Header */}
+        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-emerald-500/20 pb-4">
+          <div className="flex items-center gap-3">
+            <span className="px-3.5 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 text-xs font-extrabold uppercase tracking-wider flex items-center gap-2">
+              <Layers className="w-3.5 h-3.5 text-[#C86D2D]" />
+              3D Structural Twin & Phase Drum
+            </span>
+            <h2 className="text-lg sm:text-2xl font-extrabold">
+              Scroll-Driven Megaproject Execution Matrix
+            </h2>
+          </div>
+
+          {/* Step Quick-Jump Indicators */}
+          <div className="flex items-center gap-2 font-mono text-xs">
+            {SITE_SIMULATION_PHASES.map((p, i) => (
+              <div
+                key={p.step}
+                className={`px-2.5 py-1 rounded-lg border transition-all ${
+                  i === activePhaseIdx
+                    ? "bg-[#C86D2D] border-amber-300 text-white font-black scale-105"
+                    : i < activePhaseIdx
+                      ? "bg-emerald-950/80 border-emerald-500/40 text-emerald-300"
+                      : "bg-slate-900 border-slate-800 text-slate-500"
+                }`}
+              >
+                {p.step}
+              </div>
+            ))}
+            <div className="hidden sm:block px-3 py-1 rounded-lg bg-slate-900 border border-slate-800 text-amber-400 font-bold ml-2">
+              <motion.span>{percentText}</motion.span>
+            </div>
+          </div>
+        </div>
+
+        {/* Main Split Viewport: Left 3D Isometric Core | Right 3D Revolving Phase Drum */}
+        <div className="grid lg:grid-cols-12 gap-8 items-center my-auto py-2">
+          {/* LEFT: New 3D Isometric Exploded Structural Core + Live Site Photo Morph */}
+          <div className="lg:col-span-6 relative h-[360px] sm:h-[430px] rounded-3xl bg-slate-900/90 border border-emerald-500/30 overflow-hidden shadow-2xl flex flex-col justify-between p-5">
+            {/* Crossfading Live Construction Photo Backdrop */}
+            <AnimatePresence mode="wait">
+              <motion.img
+                key={activePhase.image}
+                src={activePhase.image}
+                alt={activePhase.title}
+                initial={{ opacity: 0, scale: 1.12 }}
+                animate={{ opacity: 0.26, scale: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.55 }}
+                className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+              />
+            </AnimatePresence>
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/60 to-slate-950/80 pointer-events-none" />
+
+            {/* Scanning Laser Bar */}
+            <div className="absolute inset-x-0 h-16 bg-gradient-to-b from-emerald-400/15 to-transparent scanline-bar pointer-events-none" />
+
+            {/* Rotating Orbital Radar Rings */}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <motion.svg
+                style={{ rotate: radarRotate }}
+                viewBox="0 0 300 300"
+                className="w-[290px] h-[290px] sm:w-[340px] sm:h-[340px] opacity-30"
+              >
+                <circle
+                  cx="150"
+                  cy="150"
+                  r="135"
+                  fill="none"
+                  stroke="#10b981"
+                  strokeWidth="1.5"
+                  strokeDasharray="6 8"
+                />
+                <circle
+                  cx="150"
+                  cy="150"
+                  r="105"
+                  fill="none"
+                  stroke="#f59e0b"
+                  strokeWidth="1"
+                  strokeDasharray="18 12"
+                />
+              </motion.svg>
+              <motion.svg
+                style={{ rotate: radarReverse }}
+                viewBox="0 0 300 300"
+                className="absolute w-[230px] h-[230px] opacity-25"
+              >
+                <circle
+                  cx="150"
+                  cy="150"
+                  r="95"
+                  fill="none"
+                  stroke="#38bdf8"
+                  strokeWidth="2"
+                  strokeDasharray="4 14"
+                />
+              </motion.svg>
+            </div>
+
+            {/* Top Overlay HUD inside Left Viewport */}
+            <div className="relative z-20 flex items-center justify-between text-[11px] font-mono">
+              <span className="px-2.5 py-1 rounded-md bg-slate-950/90 border border-emerald-500/40 text-emerald-300 font-bold">
+                ISOMETRIC CORE // {activePhase.code}
+              </span>
+              <span className="px-2.5 py-1 rounded-md bg-slate-950/90 border border-slate-700 text-amber-300">
+                {activePhase.depth}
+              </span>
+            </div>
+
+            {/* Center 5-Layer 3D Isometric Stack */}
+            <div className="relative flex-1 flex items-center justify-center">
+              {SITE_SIMULATION_PHASES.map((phase, index) => (
+                <IsometricLayerSlab
+                  key={phase.step}
+                  phase={phase}
+                  index={index}
+                  activePhaseIdx={activePhaseIdx}
+                  smoothProgress={smoothProgress}
+                />
+              ))}
+            </div>
+
+            {/* Bottom Overlay Telemetry Footer inside Left Viewport */}
+            <div className="relative z-20 flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-white/10 text-xs font-mono">
+              <div>
+                <span className="text-slate-400">ACTIVE LAYER: </span>
+                <span className="text-white font-bold">
+                  {activePhase.layerLabel}
+                </span>
+              </div>
+              <span
+                style={{ color: activePhase.accent }}
+                className="font-extrabold"
+              >
+                {activePhase.metric}
+              </span>
+            </div>
+          </div>
+
+          {/* RIGHT: 3D Revolving Cylinder / Rolodex Phase Wheel */}
+          <div className="lg:col-span-6 relative h-[380px] sm:h-[430px] flex items-center justify-center">
+            {/* Vertical Drum Guide Rail */}
+            <div className="absolute right-2 top-8 bottom-8 w-1.5 rounded-full bg-slate-900 border border-slate-800 hidden sm:flex flex-col justify-between p-0.5">
+              {SITE_SIMULATION_PHASES.map((p, idx) => (
+                <span
+                  key={p.step}
+                  style={{
+                    backgroundColor:
+                      idx === activePhaseIdx ? p.accent : "transparent",
+                  }}
+                  className="w-full h-6 rounded-full transition-colors duration-300"
+                />
+              ))}
+            </div>
+
+            {/* 3D Revolving Phase Cards */}
+            <div
+              className="relative w-full h-full flex items-center justify-center overflow-hidden"
+              style={{ perspective: "1200px" }}
+            >
+              {SITE_SIMULATION_PHASES.map((phase, idx) => (
+                <PhaseWheelCard
+                  key={phase.step}
+                  phase={phase}
+                  index={idx}
+                  smoothProgress={smoothProgress}
+                  activePhaseIdx={activePhaseIdx}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom Scrubber Bar */}
+        <div className="w-full bg-slate-900 h-2 rounded-full overflow-hidden border border-slate-800">
+          <motion.div
+            style={{ scaleX: smoothProgress }}
+            className="h-full bg-gradient-to-r from-[#00684A] via-emerald-400 to-[#C86D2D] origin-left"
+          />
+        </div>
+      </div>
+    </section>
+  );
+};
+
+// ============================================================================
+// 2. ABOUT SECTION — WORD-BY-WORD SCROLL SCRUB + CIRCULAR IRIS PORTAL REVEAL
+// ============================================================================
+const AboutSection = () => {
+  const secRef = useRef(null);
+  const { scrollYProgress } = useScroll({
+    target: secRef,
+    offset: ["start 85%", "end 20%"],
+  });
+
+  const smoothScroll = useSpring(scrollYProgress, {
+    stiffness: 90,
+    damping: 20,
+  });
+
+  const clipRadius = useTransform(
+    smoothScroll,
+    [0, 0.6],
+    ["inset(18% 18% 18% 18% round 48px)", "inset(0% 0% 0% 0% round 24px)"],
+  );
+  const imgScale = useTransform(smoothScroll, [0, 1], [1.35, 1]);
+  const badgeY = useTransform(smoothScroll, [0, 1], [60, -25]);
+  const ringRotate = useTransform(smoothScroll, [0, 1], [0, 180]);
+
+  return (
+    <section
+      ref={secRef}
       id="about"
-      className="py-20 lg:py-28 bg-white overflow-hidden blueprint-grid"
+      className="py-24 lg:py-32 bg-white overflow-hidden blueprint-grid relative"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
+        <div className="grid lg:grid-cols-2 gap-14 items-center">
           <div className="space-y-6">
             <FadeUp>
               <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-100 text-[#00684A] text-xs font-extrabold uppercase tracking-wider">
                 <Users className="w-4 h-4" />
-                <span>About AID SARL</span>
+                <span>About AID SARL • Scroll-Scrubbed Manifesto</span>
               </div>
             </FadeUp>
+
             <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900">
               <RevealWords text="Pioneering Infrastructure Development in the DRC" />
             </h2>
-            <FadeUp delay={0.1}>
-              <p className="text-slate-600 leading-relaxed">
-                Founded with a vision to modernize Africa&apos;s structural
-                backbone, Africa Infrastructures Développement SARL brings
-                together world-class engineering, local expertise, and an
-                unwavering commitment to quality.
-              </p>
-            </FadeUp>
-            <FadeUp delay={0.2}>
-              <p className="text-slate-600 leading-relaxed">
-                We specialize in executing complex public procurement contracts,
-                managing end-to-end heavy civil engineering projects from
-                architectural design to turnkey delivery, ensuring full
-                compliance with the ARMP regulatory framework.
-              </p>
-            </FadeUp>
+
+            <ScrollScrubParagraph
+              text="Founded with a bold engineering vision to modernize Central Africa's structural backbone, Africa Infrastructures Développement SARL unites world-class civil engineering, heavy autonomous machinery, and uncompromising regulatory probity across every province."
+              className="text-lg sm:text-xl font-bold text-slate-800 leading-relaxed"
+            />
+
+            <ScrollScrubParagraph
+              text="We execute complex public procurement contracts from geotechnical soil testing and 3D BIM modeling to turnkey delivery, operating in 100% compliance with the ARMP regulatory framework."
+              className="text-sm sm:text-base text-slate-600 leading-relaxed"
+            />
+
             <StaggerGroup
               className="grid grid-cols-2 gap-6 pt-4"
               stagger={0.15}
             >
-              <StaggerItem className="border-l-4 border-[#00684A] pl-4 bg-white/80 p-3 rounded-r-xl">
+              <StaggerItem className="border-l-4 border-[#00684A] pl-4 bg-white/90 p-4 rounded-r-2xl shadow-sm">
                 <div className="text-2xl font-extrabold text-slate-900">
                   Vision
                 </div>
@@ -2097,7 +1903,7 @@ const AboutSection = () => {
                   Central Africa.
                 </p>
               </StaggerItem>
-              <StaggerItem className="border-l-4 border-[#C86D2D] pl-4 bg-white/80 p-3 rounded-r-xl">
+              <StaggerItem className="border-l-4 border-[#C86D2D] pl-4 bg-white/90 p-4 rounded-r-2xl shadow-sm">
                 <div className="text-2xl font-extrabold text-slate-900">
                   Mission
                 </div>
@@ -2110,36 +1916,53 @@ const AboutSection = () => {
           </div>
 
           <div className="relative">
-            <div
-              ref={imgRef}
-              className="relative overflow-hidden rounded-3xl shadow-2xl"
+            <motion.svg
+              style={{ rotate: ringRotate }}
+              viewBox="0 0 200 200"
+              className="absolute -top-10 -right-10 w-44 h-44 text-[#00684A]/15 pointer-events-none hidden sm:block"
+            >
+              <circle
+                cx="100"
+                cy="100"
+                r="88"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="3"
+                strokeDasharray="8 8"
+              />
+              <circle
+                cx="100"
+                cy="100"
+                r="65"
+                fill="none"
+                stroke="#C86D2D"
+                strokeWidth="2"
+                strokeOpacity="0.3"
+              />
+            </motion.svg>
+
+            <motion.div
+              style={{ clipPath: clipRadius }}
+              className="relative overflow-hidden shadow-2xl h-[430px]"
             >
               <motion.img
                 src="https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=1200&q=80"
                 alt="Engineering Team"
-                initial={{ scale: 1.3 }}
-                animate={isInView ? { scale: 1 } : {}}
-                transition={{ duration: 1.2, ease: EASE }}
+                style={{ scale: imgScale }}
                 className="w-full h-full object-cover"
               />
-              <motion.div
-                initial={{ x: "0%" }}
-                animate={isInView ? { x: "100%" } : {}}
-                transition={{ duration: 0.9, ease: EASE }}
-                className="absolute inset-0 bg-slate-950 z-10"
-              />
-            </div>
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent" />
+              <div className="absolute bottom-5 left-6 right-6 flex items-center justify-between text-white text-xs font-mono">
+                <span className="px-3 py-1 rounded-full bg-slate-950/80 border border-emerald-400/40">
+                  FIELD GEOTECHNICAL TEAM
+                </span>
+                <span className="text-amber-300 font-bold">LUBUMBASHI HQ</span>
+              </div>
+            </motion.div>
+
             <motion.div
-              initial={{ opacity: 0, scale: 0.7, y: 30 }}
-              whileInView={{ opacity: 1, scale: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{
-                delay: 0.5,
-                type: "spring",
-                stiffness: 180,
-                damping: 14,
-              }}
-              className="absolute -bottom-6 -left-6 bg-[#00684A] text-white p-6 rounded-3xl shadow-xl hidden md:block border-2 border-amber-400/40"
+              style={{ y: badgeY }}
+              className="absolute -bottom-6 -left-6 bg-[#00684A] text-white p-6 rounded-3xl shadow-2xl hidden md:block border-2 border-amber-400/50"
             >
               <div className="text-4xl font-extrabold">
                 <AnimatedCounter value="10+" />
@@ -2158,53 +1981,93 @@ const AboutSection = () => {
 };
 
 // ============================================================================
-// 3. SERVICES — Sticky scrolly-telling + Rotating Survey Theodolite
+// 3. SERVICES — STICKY 3D CARD STACKING DECK + LASER DEPTH GAUGE
 // ============================================================================
-const ServiceCard = ({ service, index }) => {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: "-100px" });
+const StickyStackServiceCard = ({ service, index, total }) => {
+  const cardRef = useRef(null);
+  const { scrollYProgress } = useScroll({
+    target: cardRef,
+    offset: ["start 75%", "end 15%"],
+  });
+
+  const scale = useTransform(scrollYProgress, [0, 0.5, 1], [0.94, 1, 0.96]);
+  const rotateX = useTransform(scrollYProgress, [0, 0.5, 1], [8, 0, -4]);
+
   return (
-    <motion.div
-      ref={ref}
-      initial={{ opacity: 0, y: 60 }}
-      animate={isInView ? { opacity: 1, y: 0 } : {}}
-      transition={{ duration: 0.7, ease: EASE }}
-      className="relative bg-white rounded-3xl p-8 border border-slate-200 shadow-sm hover:shadow-xl hover:border-[#00684A] transition-all group overflow-hidden"
+    <div
+      ref={cardRef}
+      style={{ top: `${110 + index * 18}px` }}
+      className="sticky mb-8 last:mb-0"
     >
-      <span className="absolute -right-4 -top-6 text-[7rem] font-black text-slate-50 select-none leading-none pointer-events-none group-hover:text-emerald-50 transition-colors">
-        {String(index + 1).padStart(2, "0")}
-      </span>
-      <div
-        className={`relative w-14 h-14 rounded-2xl flex items-center justify-center mb-6 transition-colors ${
-          service.accent === "green"
-            ? "bg-emerald-50 text-[#00684A] group-hover:bg-[#00684A] group-hover:text-white"
-            : "bg-orange-50 text-[#C86D2D] group-hover:bg-[#C86D2D] group-hover:text-white"
-        }`}
+      <motion.div
+        style={{ scale, rotateX, transformPerspective: 1000 }}
+        className="relative bg-white rounded-3xl p-7 sm:p-9 border-2 border-slate-200/90 hover:border-[#00684A] shadow-xl transition-colors overflow-hidden"
       >
-        <service.icon className="w-7 h-7" />
-      </div>
-      <h3 className="relative text-xl font-extrabold text-slate-900 mb-3">
-        {service.title}
-      </h3>
-      <p className="relative text-sm text-slate-600 mb-6 leading-relaxed">
-        {service.shortDesc}
-      </p>
-      <ul className="relative space-y-2">
-        {service.highlights.map((highlight, idx) => (
-          <li
-            key={idx}
-            className="flex items-start gap-2 text-sm text-slate-700"
-          >
-            <Check
-              className={`w-4 h-4 mt-0.5 shrink-0 ${
-                service.accent === "green" ? "text-[#00684A]" : "text-[#C86D2D]"
+        <div
+          className={`absolute top-0 left-0 bottom-0 w-2 ${
+            service.accent === "green" ? "bg-[#00684A]" : "bg-[#C86D2D]"
+          }`}
+        />
+
+        <span className="absolute right-6 top-4 text-6xl sm:text-7xl font-black text-slate-100 select-none leading-none pointer-events-none">
+          0{index + 1}/0{total}
+        </span>
+
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
+          <div className="flex items-center gap-4">
+            <div
+              className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 ${
+                service.accent === "green"
+                  ? "bg-emerald-50 text-[#00684A]"
+                  : "bg-orange-50 text-[#C86D2D]"
               }`}
-            />
-            <span>{highlight}</span>
-          </li>
-        ))}
-      </ul>
-    </motion.div>
+            >
+              <service.icon className="w-7 h-7" />
+            </div>
+            <div>
+              <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-400">
+                CAPABILITY MODULE 0{index + 1}
+              </span>
+              <h3 className="text-xl sm:text-2xl font-extrabold text-slate-900">
+                {service.title}
+              </h3>
+            </div>
+          </div>
+
+          <span
+            className={`self-start sm:self-center px-3 py-1 rounded-full text-xs font-mono font-bold ${
+              service.accent === "green"
+                ? "bg-emerald-50 text-[#00684A] border border-emerald-200"
+                : "bg-orange-50 text-[#C86D2D] border border-orange-200"
+            }`}
+          >
+            {service.metric}
+          </span>
+        </div>
+
+        <p className="text-sm sm:text-base text-slate-600 mb-6 leading-relaxed max-w-2xl">
+          {service.shortDesc}
+        </p>
+
+        <div className="grid sm:grid-cols-3 gap-3 pt-4 border-t border-slate-100">
+          {service.highlights.map((highlight, idx) => (
+            <div
+              key={idx}
+              className="flex items-start gap-2 text-xs sm:text-sm text-slate-700 bg-slate-50 p-3 rounded-xl border border-slate-200/60"
+            >
+              <Check
+                className={`w-4 h-4 mt-0.5 shrink-0 ${
+                  service.accent === "green"
+                    ? "text-[#00684A]"
+                    : "text-[#C86D2D]"
+                }`}
+              />
+              <span className="font-medium">{highlight}</span>
+            </div>
+          ))}
+        </div>
+      </motion.div>
+    </div>
   );
 };
 
@@ -2214,7 +2077,8 @@ const ServicesSection = () => {
     target: secRef,
     offset: ["start end", "end start"],
   });
-  const dialRotate = useTransform(scrollYProgress, [0, 1], [0, 360]);
+  const dialRotate = useTransform(scrollYProgress, [0, 1], [0, 540]);
+  const barHeight = useTransform(scrollYProgress, [0.1, 0.9], ["0%", "100%"]);
 
   return (
     <section
@@ -2229,22 +2093,18 @@ const ServicesSection = () => {
               <FadeUp>
                 <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-orange-100 text-[#C86D2D] text-xs font-extrabold uppercase tracking-wider">
                   <HardHat className="w-4 h-4" />
-                  <span>Our Expertise</span>
+                  <span>Sticky 3D Card Deck</span>
                 </div>
               </FadeUp>
               <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900">
                 <RevealWords text="Comprehensive Engineering Services" />
               </h2>
-              <FadeUp delay={0.1}>
-                <p className="text-slate-600">
-                  From heavy earthmoving and highway construction to multi-story
-                  structural engineering, we deliver precision at every scale.
-                  Scroll to walk through our core capabilities.
-                </p>
-              </FadeUp>
+              <p className="text-slate-600 text-sm sm:text-base">
+                As you scroll down, each engineering division locks into our
+                vertical inspection stack.
+              </p>
 
-              {/* Scroll-Driven Survey Theodolite / Compass Widget */}
-              <div className="hidden lg:flex items-center gap-4 p-4 rounded-2xl bg-white border border-slate-200 shadow-sm mt-6">
+              <div className="flex items-center gap-4 p-4 rounded-2xl bg-white border border-slate-200 shadow-sm mt-6">
                 <motion.svg
                   style={{ rotate: dialRotate }}
                   width="56"
@@ -2287,21 +2147,32 @@ const ServicesSection = () => {
                   />
                   <polygon points="32,8 27,24 37,24" fill="#C86D2D" />
                 </motion.svg>
-                <div className="text-xs">
+                <div className="text-xs flex-1">
                   <div className="font-extrabold text-slate-900">
                     Topographical Laser Alignment
                   </div>
                   <div className="text-slate-500 mt-0.5">
-                    Survey reticle calibrates with your scroll position.
+                    Deck stack depth calibrated to Lenis scroll.
+                  </div>
+                  <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden mt-2">
+                    <motion.div
+                      style={{ width: barHeight }}
+                      className="h-full bg-gradient-to-r from-[#00684A] to-[#C86D2D]"
+                    />
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="lg:col-span-8 grid sm:grid-cols-2 gap-6">
+          <div className="lg:col-span-8">
             {SERVICES_DATA.map((service, i) => (
-              <ServiceCard key={service.id} service={service} index={i} />
+              <StickyStackServiceCard
+                key={service.id}
+                service={service}
+                index={i}
+                total={SERVICES_DATA.length}
+              />
             ))}
           </div>
         </div>
@@ -2311,186 +2182,182 @@ const ServicesSection = () => {
 };
 
 // ============================================================================
-// 4. INDUSTRIES — 3D tilt cards
+// 4. INDUSTRIES — SCROLL-LINKED FAN-OUT + INTERNAL IMAGE PARALLAX
 // ============================================================================
-const IndustriesSection = () => (
-  <section
-    id="industries"
-    className="py-20 lg:py-28 bg-white border-t border-slate-200"
-  >
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div className="text-center max-w-3xl mx-auto mb-16 space-y-4">
-        <FadeUp>
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-100 text-[#00684A] text-xs font-extrabold uppercase tracking-wider mx-auto">
-            <Factory className="w-4 h-4" />
-            <span>Sectors We Serve</span>
+const IndustryParallaxCard = ({ industry, index, scrollYProgress }) => {
+  const spreadOffsets = [-45, -15, 15, 45];
+  const x = useTransform(
+    scrollYProgress,
+    [0.05, 0.45],
+    [spreadOffsets[index], 0],
+  );
+  const rotateY = useTransform(
+    scrollYProgress,
+    [0.05, 0.45],
+    [(index - 1.5) * 14, 0],
+  );
+  const imgY = useTransform(scrollYProgress, [0, 1], ["-15%", "15%"]);
+
+  return (
+    <motion.div
+      style={{ x, rotateY, transformPerspective: 1000 }}
+      className="relative rounded-3xl bg-slate-900 text-white border border-slate-800 hover:border-emerald-400 transition-colors group h-[390px] overflow-hidden flex flex-col justify-end p-6 shadow-xl"
+    >
+      <motion.img
+        src={industry.image}
+        alt={industry.title}
+        style={{ y: imgY, scale: 1.22 }}
+        className="absolute inset-0 w-full h-full object-cover opacity-40 group-hover:opacity-60 transition-opacity"
+      />
+      <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/75 to-slate-950/20" />
+
+      <span className="absolute right-4 top-3 text-6xl font-black text-white/10 select-none pointer-events-none">
+        0{index + 1}
+      </span>
+
+      <div className="relative z-10">
+        <div className="flex items-center justify-between mb-4">
+          <div className="w-12 h-12 rounded-2xl bg-[#00684A] text-white flex items-center justify-center shadow-lg group-hover:bg-[#C86D2D] transition-colors">
+            <industry.icon className="w-6 h-6" />
           </div>
-        </FadeUp>
-        <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900">
-          <RevealWords text="Core Infrastructure Industries" />
-        </h2>
-        <FadeUp delay={0.15}>
+          <span className="px-2.5 py-1 rounded-full bg-white/10 backdrop-blur-md text-amber-300 text-[11px] font-mono font-bold border border-white/15">
+            {industry.stat}
+          </span>
+        </div>
+
+        <h3 className="text-xl font-extrabold text-white mb-2">
+          {industry.title}
+        </h3>
+        <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+          {industry.description}
+        </p>
+      </div>
+    </motion.div>
+  );
+};
+
+const IndustriesSection = () => {
+  const secRef = useRef(null);
+  const { scrollYProgress } = useScroll({
+    target: secRef,
+    offset: ["start 90%", "end 15%"],
+  });
+
+  return (
+    <section
+      ref={secRef}
+      id="industries"
+      className="py-24 lg:py-32 bg-white border-t border-slate-200 overflow-hidden"
+    >
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center max-w-3xl mx-auto mb-16 space-y-4">
+          <FadeUp>
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-100 text-[#00684A] text-xs font-extrabold uppercase tracking-wider mx-auto">
+              <Factory className="w-4 h-4" />
+              <span>Sectors We Serve • Parallax Windows</span>
+            </div>
+          </FadeUp>
+          <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900">
+            <RevealWords text="Core Infrastructure Industries" />
+          </h2>
           <p className="text-slate-600">
             Driving development and economic growth across diverse sectors in
             the Democratic Republic of the Congo.
           </p>
-        </FadeUp>
+        </div>
+
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {INDUSTRIES_DATA.map((industry, i) => (
+            <IndustryParallaxCard
+              key={industry.id}
+              industry={industry}
+              index={i}
+              scrollYProgress={scrollYProgress}
+            />
+          ))}
+        </div>
       </div>
-
-      <StaggerGroup
-        className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6"
-        stagger={0.12}
-      >
-        {INDUSTRIES_DATA.map((industry, i) => (
-          <StaggerItem key={industry.id}>
-            <TiltCard className="relative p-8 rounded-3xl bg-slate-50 border border-slate-200 hover:border-[#00684A] transition-colors group h-full overflow-hidden">
-              <span className="absolute -right-3 -bottom-4 text-7xl font-black text-slate-100 select-none pointer-events-none">
-                {String(i + 1).padStart(2, "0")}
-              </span>
-              <div className="relative w-14 h-14 rounded-2xl bg-white shadow-sm flex items-center justify-center mb-6 text-[#C86D2D] group-hover:bg-[#00684A] group-hover:text-white transition-colors">
-                <industry.icon className="w-7 h-7" />
-              </div>
-              <h3 className="relative text-xl font-extrabold text-slate-900 mb-3">
-                {industry.title}
-              </h3>
-              <p className="relative text-sm text-slate-600 leading-relaxed">
-                {industry.description}
-              </p>
-            </TiltCard>
-          </StaggerItem>
-        ))}
-      </StaggerGroup>
-    </div>
-  </section>
-);
+    </section>
+  );
+};
 
 // ============================================================================
-// 5. OUR WORK — Pinned horizontal scroll gallery + Moving Overhead Gantry
+// 5. WORK GALLERY — GANTRY HORIZONTAL TRACK + INTERNAL IMAGE PARALLAX
 // ============================================================================
-const GalleryCard = ({ item, onClick }) => (
+const ProjectImageCard = ({
+  item,
+  index,
+  setLightboxItem,
+  skewX,
+  imgShiftX,
+}) => (
   <motion.div
-    initial={{ opacity: 0, scale: 0.85, y: 20 }}
-    whileInView={{ opacity: 1, scale: 1, y: 0 }}
-    viewport={{ once: true, margin: "0px -10% 0px -10%" }}
-    transition={{ duration: 0.5, ease: EASE }}
-    onClick={onClick}
-    className="group cursor-pointer rounded-2xl overflow-hidden bg-slate-800 border border-slate-700/80 hover:border-[#C86D2D] transition-colors duration-300 flex flex-col justify-between shadow-lg shrink-0 w-[78vw] sm:w-[360px]"
+    style={skewX ? { skewX } : undefined}
+    whileHover={{ y: -10 }}
+    onClick={() => setLightboxItem(item)}
+    className="group relative bg-slate-950 rounded-3xl overflow-hidden border border-slate-800 hover:border-emerald-400/60 shadow-2xl cursor-pointer flex flex-col justify-between shrink-0 w-[330px] sm:w-[400px] h-[470px]"
   >
-    <div className="relative h-56 overflow-hidden bg-slate-950">
-      <img
+    <div className="relative h-60 overflow-hidden">
+      <motion.img
         src={item.image}
         alt={item.title}
-        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+        style={imgShiftX ? { x: imgShiftX, scale: 1.18 } : undefined}
+        className="w-full h-full object-cover group-hover:scale-125 transition-transform duration-700"
       />
-      <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent opacity-80" />
-      <span className="absolute top-3 left-3 px-2.5 py-1 rounded-md bg-[#00684A]/95 text-white text-[11px] font-bold shadow">
-        {item.category}
-      </span>
-      <div className="absolute top-3 right-3 flex items-center gap-1.5">
-        <div className="p-1.5 rounded-lg bg-black/50 text-white opacity-0 group-hover:opacity-100 transition">
-          <ZoomIn className="w-4 h-4" />
-        </div>
-      </div>
-      <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between text-[11px] text-amber-300 font-semibold">
-        <span className="flex items-center gap-1 truncate">
-          <MapPin className="w-3 h-3 shrink-0 text-[#C86D2D]" />
-          {item.location}
+      <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent" />
+
+      <div className="absolute top-4 left-4 right-4 flex items-center justify-between gap-2">
+        <span className="px-3 py-1 rounded-full bg-[#00684A]/95 text-white text-[11px] font-extrabold shadow">
+          {item.category}
         </span>
-        <span className="px-2 py-0.5 rounded bg-black/60 text-white shrink-0">
-          {item.year}
+        <span className="px-2.5 py-1 rounded-full bg-slate-900/90 text-amber-300 text-[11px] font-mono font-bold border border-amber-400/30">
+          #{String(index + 1).padStart(2, "0")} • {item.year}
+        </span>
+      </div>
+
+      <div className="absolute bottom-3 left-4 right-4 flex items-center justify-between">
+        <span className="text-[11px] font-bold text-emerald-300 bg-slate-950/80 px-2.5 py-1 rounded-md border border-emerald-500/30">
+          {item.badge}
+        </span>
+        <span className="w-9 h-9 rounded-full bg-[#C86D2D] text-white flex items-center justify-center shadow-lg group-hover:scale-110 transition">
+          <ZoomIn className="w-4 h-4" />
         </span>
       </div>
     </div>
-    <div className="p-4 flex-1 flex flex-col justify-between">
+
+    <div className="p-6 flex-1 flex flex-col justify-between">
       <div>
-        <div className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 mb-1">
-          {item.badge}
+        <div className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
+          <MapPin className="w-3.5 h-3.5 text-[#C86D2D] shrink-0" />
+          <span className="truncate">{item.location}</span>
         </div>
-        <h4 className="font-bold text-sm text-white group-hover:text-amber-300 transition line-clamp-2">
+        <h3 className="text-lg font-extrabold text-white group-hover:text-emerald-300 transition-colors line-clamp-2">
           {item.title}
-        </h4>
-        <p className="text-xs text-slate-400 mt-1.5 line-clamp-2 leading-relaxed">
+        </h3>
+        <p className="text-xs text-slate-400 mt-2 line-clamp-2 leading-relaxed">
           {item.description}
         </p>
       </div>
-      <div className="mt-4 pt-3 border-t border-slate-700/70 flex items-center justify-between text-[11px]">
-        <span className="text-slate-300 font-semibold">{item.budget}</span>
-        <span className="text-[#C86D2D] font-bold flex items-center gap-1">
-          Inspect <ChevronRight className="w-3.5 h-3.5" />
-        </span>
+
+      <div className="pt-4 mt-4 border-t border-slate-800/90 flex items-center justify-between text-xs">
+        <div>
+          <div className="text-[10px] uppercase text-slate-500 font-bold">
+            Engineering Spec
+          </div>
+          <div className="font-mono font-bold text-slate-200">
+            {item.metrics}
+          </div>
+        </div>
+        <div className="text-right">
+          <div className="text-[10px] uppercase text-slate-500 font-bold">
+            Valuation
+          </div>
+          <div className="font-extrabold text-amber-400">{item.budget}</div>
+        </div>
       </div>
     </div>
   </motion.div>
 );
-
-const HorizontalScrollGallery = ({ items, onItemClick }) => {
-  const sectionRef = useRef(null);
-  const trackRef = useRef(null);
-  const [trackWidth, setTrackWidth] = useState(0);
-
-  const measure = useCallback(() => {
-    if (trackRef.current) {
-      setTrackWidth(
-        Math.max(trackRef.current.scrollWidth - window.innerWidth, 0),
-      );
-    }
-  }, []);
-
-  useEffect(() => {
-    measure();
-    window.addEventListener("resize", measure);
-    return () => window.removeEventListener("resize", measure);
-  }, [items, measure]);
-
-  const { scrollYProgress } = useScroll({
-    target: sectionRef,
-    offset: ["start start", "end end"],
-  });
-  const x = useTransform(scrollYProgress, [0, 1], [0, -trackWidth]);
-  const springX = useSpring(x, { stiffness: 120, damping: 24, mass: 0.3 });
-  const gantryX = useTransform(scrollYProgress, [0, 1], ["5%", "88%"]);
-
-  const pinHeight = Math.max(items.length * 55, 180);
-
-  return (
-    <div
-      ref={sectionRef}
-      style={{ height: `${pinHeight}vh` }}
-      className="relative"
-    >
-      <div className="sticky top-0 h-screen flex flex-col justify-center overflow-hidden">
-        {/* Overhead Gantry Crane Rail that tracks horizontal scroll */}
-        <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 mb-6">
-          <div className="relative h-3 bg-slate-800 rounded-full border border-slate-700">
-            <motion.div
-              style={{ left: gantryX }}
-              className="absolute -top-3 -translate-x-1/2 flex flex-col items-center"
-            >
-              <div className="px-2.5 py-0.5 rounded bg-[#C86D2D] text-[10px] font-mono font-bold text-white shadow">
-                GANTRY HOIST
-              </div>
-              <div className="w-3 h-3 rounded-full bg-amber-300 border-2 border-slate-900" />
-            </motion.div>
-          </div>
-        </div>
-
-        <motion.div
-          ref={trackRef}
-          style={{ x: springX }}
-          className="flex gap-6 pl-4 sm:pl-6 pr-[20vw] will-change-transform"
-        >
-          {items.map((item) => (
-            <GalleryCard
-              key={item.id}
-              item={item}
-              onClick={() => onItemClick(item)}
-            />
-          ))}
-        </motion.div>
-      </div>
-    </div>
-  );
-};
 
 const WorkGallerySection = ({
   galleryItems,
@@ -2499,263 +2366,478 @@ const WorkGallerySection = ({
   setSelectedCategory,
   filteredGallery,
   setLightboxItem,
-}) => (
-  <section id="work" className="py-20 lg:py-16 bg-slate-900 text-white">
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-10">
-        <div>
-          <FadeUp>
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#C86D2D]/20 border border-[#C86D2D]/40 text-amber-300 text-xs font-extrabold uppercase tracking-wider">
-              <ImageIcon className="w-4 h-4 text-[#C86D2D]" />
-              <span>Project Portfolio & Visual Showcase</span>
-            </div>
-          </FadeUp>
-          <h2 className="text-3xl sm:text-4xl font-extrabold mt-3">
-            <RevealWords text="Our Work: Infrastructure in Action" />
-          </h2>
-          <FadeUp delay={0.1}>
-            <p className="text-slate-300 mt-2 max-w-2xl text-sm sm:text-base">
-              Explore our completed institutional buildings, urban road asphalt
-              works, hydraulic drainage systems, and heavy machinery fleet
-              across the DRC. Keep scrolling — the overhead gantry moves with
-              you.
-            </p>
-          </FadeUp>
-        </div>
-      </div>
+}) => {
+  const [viewMode, setViewMode] = useState("gantry");
+  const targetRef = useRef(null);
 
-      <div className="flex flex-wrap items-center justify-between gap-4 pb-8 border-b border-slate-800">
-        <div className="flex flex-wrap items-center gap-2">
-          {categories.map((cat) => {
-            const active = selectedCategory === cat;
-            const count =
-              cat === "All"
-                ? galleryItems.length
-                : galleryItems.filter((i) => i.category === cat).length;
-            return (
-              <button
-                key={cat}
-                onClick={() => setSelectedCategory(cat)}
-                className={`relative px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-2 ${
-                  active
-                    ? "text-white"
-                    : "bg-slate-800/90 text-slate-300 hover:bg-slate-800 hover:text-white"
-                }`}
-              >
-                {active && (
-                  <motion.span
-                    layoutId="categoryPill"
-                    className="absolute inset-0 rounded-xl bg-[#00684A] border border-emerald-400/40 shadow-md"
-                    transition={{ type: "spring", stiffness: 350, damping: 28 }}
-                  />
-                )}
-                <span className="relative z-10">{cat}</span>
-                <span
-                  className={`relative z-10 px-2 py-0.5 rounded-full text-[11px] ${
+  const { scrollYProgress, scrollY } = useScroll({
+    target: targetRef,
+    offset: ["start start", "end end"],
+  });
+
+  const velocity = useVelocity(scrollY);
+  const smoothVelocity = useSpring(velocity, { damping: 50, stiffness: 350 });
+  const skewX = useTransform(smoothVelocity, [-1200, 1200], [7, -7]);
+
+  const totalShift = Math.max(0, (filteredGallery.length - 2.5) * 420);
+  const rawX = useTransform(scrollYProgress, [0, 1], [0, -totalShift]);
+  const x = useSpring(rawX, { stiffness: 120, damping: 26 });
+  const trolleyLeft = useTransform(scrollYProgress, [0, 1], ["4%", "92%"]);
+  const imgShiftX = useTransform(scrollYProgress, [0, 1], ["-22px", "22px"]);
+
+  return (
+    <section id="work" className="bg-slate-900 text-white">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-8">
+        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-8">
+          <div>
+            <FadeUp>
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#C86D2D]/20 border border-[#C86D2D]/40 text-amber-300 text-xs font-extrabold uppercase tracking-wider">
+                <ImageIcon className="w-4 h-4 text-[#C86D2D]" />
+                <span>12 Landmark Projects & Visual Showcase</span>
+              </div>
+            </FadeUp>
+            <h2 className="text-3xl sm:text-4xl font-extrabold mt-3">
+              <RevealWords text="Our Work: Infrastructure in Action" />
+            </h2>
+            <p className="text-slate-300 mt-2 max-w-2xl text-sm sm:text-base">
+              Scroll vertically to drive the overhead gantry crane and pan
+              across our completed institutional buildings, urban roads, and
+              bridges.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2 bg-slate-950 p-1.5 rounded-2xl border border-slate-800 self-start">
+            <button
+              onClick={() => setViewMode("gantry")}
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition ${
+                viewMode === "gantry"
+                  ? "bg-[#00684A] text-white shadow"
+                  : "text-slate-400 hover:text-white"
+              }`}
+            >
+              <MoveHorizontal className="w-4 h-4" />
+              Crane Horizontal Scroll
+            </button>
+            <button
+              onClick={() => setViewMode("grid")}
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition ${
+                viewMode === "grid"
+                  ? "bg-[#C86D2D] text-white shadow"
+                  : "text-slate-400 hover:text-white"
+              }`}
+            >
+              <LayoutGrid className="w-4 h-4" />
+              All Cards Grid ({filteredGallery.length})
+            </button>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-4 pb-6 border-b border-slate-800">
+          <div className="flex flex-wrap items-center gap-2">
+            {categories.map((cat) => {
+              const active = selectedCategory === cat;
+              const count =
+                cat === "All"
+                  ? galleryItems.length
+                  : galleryItems.filter((i) => i.category === cat).length;
+              return (
+                <button
+                  key={cat}
+                  onClick={() => setSelectedCategory(cat)}
+                  className={`relative px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-2 ${
                     active
-                      ? "bg-[#C86D2D] text-white"
-                      : "bg-slate-700 text-slate-300"
+                      ? "text-white"
+                      : "bg-slate-800/90 text-slate-300 hover:bg-slate-800 hover:text-white"
                   }`}
                 >
-                  {count}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-        <div className="text-xs text-slate-400">
-          Showing {filteredGallery.length} project showcase image(s) • Scroll
-          down to pan through • Click any photo to enlarge
-        </div>
-      </div>
-    </div>
-
-    <div className="mt-4">
-      <HorizontalScrollGallery
-        key={selectedCategory}
-        items={filteredGallery}
-        onItemClick={setLightboxItem}
-      />
-    </div>
-  </section>
-);
-
-// ============================================================================
-// 6. INSIGHTS
-// ============================================================================
-const InsightsSection = () => (
-  <section
-    id="insights"
-    className="py-20 lg:py-28 bg-slate-50 border-t border-slate-200"
-  >
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
-        <div>
-          <FadeUp>
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-orange-100 text-[#C86D2D] text-xs font-extrabold uppercase tracking-wider">
-              <Lightbulb className="w-4 h-4" />
-              <span>News & Perspectives</span>
-            </div>
-          </FadeUp>
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 mt-3">
-            <RevealWords text="Company Insights" />
-          </h2>
-        </div>
-        <MagneticButton className="text-[#00684A] font-bold text-sm flex items-center gap-1.5 hover:text-[#004D36] transition-colors">
-          View All News <ArrowUpRight className="w-4 h-4" />
-        </MagneticButton>
-      </div>
-
-      <StaggerGroup className="grid md:grid-cols-3 gap-8" stagger={0.15}>
-        {INSIGHTS_DATA.map((insight) => (
-          <StaggerItem key={insight.id}>
-            <motion.div
-              whileHover={{ y: -8 }}
-              transition={{ duration: 0.3 }}
-              className="bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-xl border border-slate-200 flex flex-col h-full"
-            >
-              <div className="h-48 overflow-hidden relative">
-                <img
-                  src={insight.image}
-                  alt={insight.title}
-                  className="w-full h-full object-cover hover:scale-110 transition-transform duration-500"
-                />
-                <div className="absolute top-4 left-4 bg-white/95 backdrop-blur px-3 py-1 rounded-full text-[11px] font-bold text-[#00684A] shadow-sm">
-                  {insight.tag}
-                </div>
-              </div>
-              <div className="p-6 flex-grow flex flex-col justify-between">
-                <div>
-                  <div className="text-xs text-slate-500 font-semibold mb-2">
-                    {insight.date}
-                  </div>
-                  <h3 className="text-lg font-extrabold text-slate-900 leading-tight mb-3 hover:text-[#C86D2D] transition-colors cursor-pointer">
-                    {insight.title}
-                  </h3>
-                  <p className="text-sm text-slate-600 line-clamp-3">
-                    {insight.excerpt}
-                  </p>
-                </div>
-                <button className="mt-6 text-[#00684A] font-bold text-sm flex items-center gap-1.5 group">
-                  Read Article{" "}
-                  <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                  {active && (
+                    <motion.span
+                      layoutId="categoryPill"
+                      className="absolute inset-0 rounded-xl bg-[#00684A] border border-emerald-400/40 shadow-md"
+                      transition={{
+                        type: "spring",
+                        stiffness: 350,
+                        damping: 28,
+                      }}
+                    />
+                  )}
+                  <span className="relative z-10">{cat}</span>
+                  <span
+                    className={`relative z-10 px-2 py-0.5 rounded-full text-[11px] ${
+                      active
+                        ? "bg-[#C86D2D] text-white"
+                        : "bg-slate-700 text-slate-300"
+                    }`}
+                  >
+                    {count}
+                  </span>
                 </button>
+              );
+            })}
+          </div>
+          <div className="text-xs text-slate-400 font-mono">
+            Showing {filteredGallery.length} project card(s) • Click any card
+            for high-res inspection
+          </div>
+        </div>
+      </div>
+
+      {viewMode === "gantry" ? (
+        <div ref={targetRef} className="relative h-[300vh]">
+          <div className="sticky top-24 h-[calc(100vh-6rem)] flex flex-col justify-center overflow-hidden">
+            <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 mb-6">
+              <div className="relative h-6 bg-slate-950 rounded-full border border-slate-800 flex items-center px-3">
+                <div className="w-full h-1 bg-gradient-to-r from-[#00684A] via-amber-500 to-[#C86D2D] opacity-50" />
+                <motion.div
+                  style={{ left: trolleyLeft }}
+                  className="absolute -top-1.5 w-20 h-9 rounded-lg bg-[#C86D2D] border-2 border-amber-300 shadow-lg flex items-center justify-center text-[10px] font-mono font-black text-white"
+                >
+                  GANTRY
+                </motion.div>
+              </div>
+            </div>
+
+            <div className="pl-4 sm:pl-12 lg:pl-20 overflow-visible">
+              <motion.div
+                style={{ x }}
+                className="flex items-center gap-7 w-max"
+              >
+                {filteredGallery.map((item, idx) => (
+                  <ProjectImageCard
+                    key={item.id}
+                    item={item}
+                    index={idx}
+                    setLightboxItem={setLightboxItem}
+                    skewX={skewX}
+                    imgShiftX={imgShiftX}
+                  />
+                ))}
+              </motion.div>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20 pt-6">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-7 justify-items-center">
+            {filteredGallery.map((item, idx) => (
+              <ProjectImageCard
+                key={item.id}
+                item={item}
+                index={idx}
+                setLightboxItem={setLightboxItem}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+    </section>
+  );
+};
+
+// ============================================================================
+// 5.5 HEAVY MACHINERY FLEET — 3-COLUMN COUNTER-DIRECTIONAL PARALLAX MATRIX
+// ============================================================================
+const FleetShowcaseSection = () => {
+  const secRef = useRef(null);
+  const { scrollYProgress } = useScroll({
+    target: secRef,
+    offset: ["start end", "end start"],
+  });
+
+  const colLeftY = useTransform(scrollYProgress, [0, 1], [65, -65]);
+  const colCenterY = useTransform(scrollYProgress, [0, 1], [-55, 55]);
+  const colRightY = useTransform(scrollYProgress, [0, 1], [45, -45]);
+
+  const getColMotion = (idx) => {
+    if (idx % 3 === 0) return colLeftY;
+    if (idx % 3 === 1) return colCenterY;
+    return colRightY;
+  };
+
+  return (
+    <section
+      ref={secRef}
+      id="fleet"
+      className="py-24 lg:py-32 bg-slate-950 text-white border-t border-slate-800 blueprint-grid-dark overflow-hidden"
+    >
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-16">
+          <div>
+            <FadeUp>
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 text-xs font-extrabold uppercase tracking-wider">
+                <Wrench className="w-4 h-4 text-[#C86D2D]" />
+                <span>Counter-Directional Scroll Matrix</span>
+              </div>
+            </FadeUp>
+            <h2 className="text-3xl sm:text-4xl font-extrabold mt-3">
+              <RevealWords text="Proprietary Heavy Machinery & Batching Fleet" />
+            </h2>
+          </div>
+          <div className="flex items-center gap-3 bg-slate-900 px-4 py-3 rounded-2xl border border-slate-800">
+            <Gauge className="w-6 h-6 text-[#C86D2D]" />
+            <div className="text-xs">
+              <div className="font-extrabold text-white">
+                65+ Heavy Units Deployed
+              </div>
+              <div className="text-slate-400">
+                Lubumbashi • Likasi • Kolwezi
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-7">
+          {FLEET_SHOWCASE_DATA.map((unit, idx) => (
+            <motion.div
+              key={unit.id}
+              style={{ y: getColMotion(idx) }}
+              className="bg-slate-900/95 rounded-3xl overflow-hidden border border-slate-800 hover:border-[#C86D2D] transition-colors group shadow-2xl"
+            >
+              <div className="h-52 overflow-hidden relative">
+                <img
+                  src={unit.image}
+                  alt={unit.name}
+                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent" />
+                <span className="absolute top-3 left-3 px-3 py-1 rounded-full bg-slate-950/90 text-emerald-300 text-[11px] font-bold border border-emerald-500/30">
+                  {unit.category}
+                </span>
+                <span className="absolute top-3 right-3 px-2.5 py-1 rounded-full bg-[#C86D2D] text-white text-[11px] font-extrabold">
+                  {unit.count}
+                </span>
+              </div>
+              <div className="p-6">
+                <h3 className="text-lg font-extrabold text-white group-hover:text-amber-300 transition-colors">
+                  {unit.name}
+                </h3>
+                <p className="text-xs text-slate-400 mt-1.5">{unit.spec}</p>
+                <div className="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between text-xs font-mono">
+                  <span className="text-slate-500">CAPACITY</span>
+                  <span className="text-emerald-400 font-bold">
+                    {unit.capacity}
+                  </span>
+                </div>
               </div>
             </motion.div>
-          </StaggerItem>
-        ))}
-      </StaggerGroup>
-    </div>
-  </section>
-);
-
-// ============================================================================
-// 7. RESOURCES
-// ============================================================================
-const ResourcesSection = () => (
-  <section
-    id="resources"
-    className="py-20 lg:py-28 bg-white border-t border-slate-200"
-  >
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div className="text-center max-w-3xl mx-auto mb-16 space-y-4">
-        <FadeUp>
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#C86D2D]/10 text-[#C86D2D] text-xs font-extrabold uppercase tracking-wider mx-auto">
-            <BookOpen className="w-4 h-4" />
-            <span>Downloads & Documentation</span>
-          </div>
-        </FadeUp>
-        <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900">
-          <RevealWords text="Corporate Resources" />
-        </h2>
-        <FadeUp delay={0.1}>
-          <p className="text-slate-600">
-            Access our latest brochures, compliance policies, and technical case
-            studies.
-          </p>
-        </FadeUp>
+          ))}
+        </div>
       </div>
-
-      <StaggerGroup
-        className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4"
-        stagger={0.1}
-      >
-        {RESOURCES_DATA.map((resource) => (
-          <StaggerItem key={resource.id}>
-            <MagneticButton
-              strength={0.15}
-              className="w-full bg-slate-50 p-6 rounded-2xl border border-slate-200 hover:border-[#00684A] transition-colors flex flex-col items-center text-center group cursor-pointer"
-            >
-              <motion.div
-                whileHover={{ rotate: 12 }}
-                className="w-12 h-12 rounded-full bg-white shadow-sm group-hover:bg-[#00684A] flex items-center justify-center mb-4 transition-colors"
-              >
-                <resource.icon className="w-5 h-5 text-slate-600 group-hover:text-white" />
-              </motion.div>
-              <h4 className="font-bold text-sm text-slate-900 mb-1 group-hover:text-[#00684A] transition-colors">
-                {resource.title}
-              </h4>
-              <div className="text-xs text-slate-500 mb-4">
-                {resource.type} • {resource.size}
-              </div>
-              <div className="mt-auto px-4 py-1.5 rounded-full border border-slate-200 text-xs font-semibold text-slate-600 group-hover:bg-[#C86D2D] group-hover:border-[#C86D2D] group-hover:text-white transition-all">
-                Download
-              </div>
-            </MagneticButton>
-          </StaggerItem>
-        ))}
-      </StaggerGroup>
-    </div>
-  </section>
-);
+    </section>
+  );
+};
 
 // ============================================================================
-// 8. COMPANY / ARMP — animated SVG timeline
+// 6. INSIGHTS — 3D BLUEPRINT FAN-OUT EDITORIAL DECK
 // ============================================================================
-const CertTimelineItem = ({ cert, index }) => {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: "-80px" });
-  const fromLeft = index % 2 === 0;
+const InsightFanCard = ({ insight, index, scrollYProgress }) => {
+  const startRotateZ = (index - 1) * 10;
+  const startX = (1 - index) * 80;
+  const rotateZ = useTransform(scrollYProgress, [0.05, 0.5], [startRotateZ, 0]);
+  const x = useTransform(scrollYProgress, [0.05, 0.5], [startX, 0]);
+  const y = useTransform(
+    scrollYProgress,
+    [0.05, 0.5],
+    [Math.abs(index - 1) * 35, 0],
+  );
 
   return (
     <motion.div
-      ref={ref}
-      initial={{ opacity: 0, x: fromLeft ? -40 : 40 }}
-      animate={isInView ? { opacity: 1, x: 0 } : {}}
-      transition={{ duration: 0.6, ease: EASE }}
-      className="p-5 hover:bg-slate-50 transition relative"
+      style={{ rotateZ, x, y }}
+      whileHover={{ y: -10 }}
+      className="bg-white rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl border border-slate-200 flex flex-col h-full"
     >
-      <div className="flex flex-wrap items-center justify-between gap-2 mb-1.5">
-        <span className="px-2.5 py-0.5 rounded-md bg-emerald-100 text-[#00684A] font-mono text-xs font-bold">
-          {cert.ref}
-        </span>
-        <span className="text-xs font-extrabold text-[#C86D2D] bg-orange-50 px-2.5 py-0.5 rounded-md border border-orange-200">
-          {cert.amount}
-        </span>
+      <div className="h-52 overflow-hidden relative">
+        <img
+          src={insight.image}
+          alt={insight.title}
+          className="w-full h-full object-cover hover:scale-110 transition-transform duration-700"
+        />
+        <div className="absolute top-4 left-4 bg-white/95 backdrop-blur px-3 py-1 rounded-full text-[11px] font-bold text-[#00684A] shadow-sm">
+          {insight.tag}
+        </div>
       </div>
-      <h4 className="font-bold text-slate-900 text-sm">{cert.project}</h4>
-      <div className="mt-2 flex flex-wrap items-center justify-between text-xs text-slate-500">
-        <span>{cert.authority}</span>
-        <span className="text-emerald-700 font-semibold flex items-center gap-1">
-          <CheckCircle2 className="w-3.5 h-3.5" /> {cert.status} ({cert.year})
-        </span>
+      <div className="p-6 flex-grow flex flex-col justify-between">
+        <div>
+          <div className="text-xs text-slate-500 font-semibold mb-2">
+            {insight.date}
+          </div>
+          <h3 className="text-lg font-extrabold text-slate-900 leading-tight mb-3 hover:text-[#C86D2D] transition-colors cursor-pointer">
+            {insight.title}
+          </h3>
+          <p className="text-sm text-slate-600 line-clamp-3">
+            {insight.excerpt}
+          </p>
+        </div>
+        <button className="mt-6 text-[#00684A] font-bold text-sm flex items-center gap-1.5 group">
+          Read Article{" "}
+          <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+        </button>
       </div>
     </motion.div>
   );
 };
 
-const CompanySection = () => {
-  const panelRef = useRef(null);
-  const isInView = useInView(panelRef, { once: true, margin: "-100px" });
+const InsightsSection = () => {
+  const secRef = useRef(null);
+  const { scrollYProgress } = useScroll({
+    target: secRef,
+    offset: ["start 90%", "end 30%"],
+  });
 
   return (
     <section
-      id="company"
-      className="py-20 lg:py-28 bg-slate-50 border-t border-slate-200 blueprint-grid"
+      ref={secRef}
+      id="insights"
+      className="py-24 lg:py-32 bg-slate-50 border-t border-slate-200 overflow-hidden"
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-16">
-        <div className="grid lg:grid-cols-12 gap-10 items-center">
-          <div className="lg:col-span-5 space-y-5">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-14">
+          <div>
+            <FadeUp>
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-orange-100 text-[#C86D2D] text-xs font-extrabold uppercase tracking-wider">
+                <Lightbulb className="w-4 h-4" />
+                <span>News & Perspectives • Fan-Out Deck</span>
+              </div>
+            </FadeUp>
+            <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 mt-3">
+              <RevealWords text="Company Insights" />
+            </h2>
+          </div>
+          <MagneticButton className="text-[#00684A] font-bold text-sm flex items-center gap-1.5 hover:text-[#004D36] transition-colors">
+            View All News <ArrowUpRight className="w-4 h-4" />
+          </MagneticButton>
+        </div>
+
+        <div className="grid md:grid-cols-3 gap-8">
+          {INSIGHTS_DATA.map((insight, i) => (
+            <InsightFanCard
+              key={insight.id}
+              insight={insight}
+              index={i}
+              scrollYProgress={scrollYProgress}
+            />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+};
+
+// ============================================================================
+// 7. RESOURCES — CONVERGING VAULT DRAWER SCROLL
+// ============================================================================
+const ResourceVaultCard = ({ resource, index, scrollYProgress }) => {
+  const fromLeft = index < 2;
+  const x = useTransform(
+    scrollYProgress,
+    [0.05, 0.55],
+    [fromLeft ? -90 : 90, 0],
+  );
+  const opacity = useTransform(scrollYProgress, [0.05, 0.45], [0.2, 1]);
+  const barWidth = useTransform(scrollYProgress, [0.2, 0.7], ["0%", "100%"]);
+
+  return (
+    <motion.div style={{ x, opacity }}>
+      <MagneticButton
+        strength={0.15}
+        className="w-full bg-slate-50 p-6 rounded-2xl border border-slate-200 hover:border-[#00684A] transition-colors flex flex-col items-center text-center group cursor-pointer shadow-sm hover:shadow-xl"
+      >
+        <motion.div
+          whileHover={{ rotate: 12 }}
+          className="w-12 h-12 rounded-full bg-white shadow-sm group-hover:bg-[#00684A] flex items-center justify-center mb-4 transition-colors"
+        >
+          <resource.icon className="w-5 h-5 text-slate-600 group-hover:text-white" />
+        </motion.div>
+        <h4 className="font-bold text-sm text-slate-900 mb-1 group-hover:text-[#00684A] transition-colors">
+          {resource.title}
+        </h4>
+        <div className="text-xs text-slate-500 mb-3">
+          {resource.type} • {resource.size}
+        </div>
+        <div className="w-full h-1 bg-slate-200 rounded-full overflow-hidden mb-4">
+          <motion.div
+            style={{ width: barWidth }}
+            className="h-full bg-[#00684A]"
+          />
+        </div>
+        <div className="mt-auto px-4 py-1.5 rounded-full border border-slate-200 text-xs font-semibold text-slate-600 group-hover:bg-[#C86D2D] group-hover:border-[#C86D2D] group-hover:text-white transition-all">
+          Download Ready
+        </div>
+      </MagneticButton>
+    </motion.div>
+  );
+};
+
+const ResourcesSection = () => {
+  const secRef = useRef(null);
+  const { scrollYProgress } = useScroll({
+    target: secRef,
+    offset: ["start 90%", "end 30%"],
+  });
+
+  return (
+    <section
+      ref={secRef}
+      id="resources"
+      className="py-24 lg:py-32 bg-white border-t border-slate-200 overflow-hidden"
+    >
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center max-w-3xl mx-auto mb-16 space-y-4">
+          <FadeUp>
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#C86D2D]/10 text-[#C86D2D] text-xs font-extrabold uppercase tracking-wider mx-auto">
+              <BookOpen className="w-4 h-4" />
+              <span>Downloads & Documentation</span>
+            </div>
+          </FadeUp>
+          <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900">
+            <RevealWords text="Corporate Resources" />
+          </h2>
+          <p className="text-slate-600">
+            Access our latest brochures, compliance policies, and technical case
+            studies.
+          </p>
+        </div>
+
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          {RESOURCES_DATA.map((resource, i) => (
+            <ResourceVaultCard
+              key={resource.id}
+              resource={resource}
+              index={i}
+              scrollYProgress={scrollYProgress}
+            />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+};
+
+// ============================================================================
+// 8. COMPANY / ARMP — SELF-DRAWING SVG LASER TIMELINE
+// ============================================================================
+const CompanySection = () => {
+  const secRef = useRef(null);
+  const { scrollYProgress } = useScroll({
+    target: secRef,
+    offset: ["start 75%", "end 35%"],
+  });
+
+  const lineScaleY = useSpring(scrollYProgress, {
+    stiffness: 100,
+    damping: 24,
+  });
+
+  return (
+    <section
+      ref={secRef}
+      id="company"
+      className="py-24 lg:py-32 bg-slate-50 border-t border-slate-200 blueprint-grid"
+    >
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid lg:grid-cols-12 gap-10 items-start">
+          <div className="lg:col-span-5 lg:sticky lg:top-32 space-y-5">
             <FadeUp>
               <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-100 text-[#00684A] text-xs font-extrabold uppercase tracking-wider">
                 <Award className="w-4 h-4" />
@@ -2765,22 +2847,12 @@ const CompanySection = () => {
             <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 leading-tight">
               <RevealWords text="Verified Public Works Track Record (ARMP DRC)" />
             </h2>
-            <FadeUp delay={0.1}>
-              <p className="text-slate-600 text-sm sm:text-base leading-relaxed">
-                Africa Infrastructures Développement SARL operates with full
-                regulatory compliance under the Autorité de Régulation des
-                Marchés Publics (ARMP). Our public contracts are backed by
-                official regulatory attestations, demonstrating our commitment
-                to Transparency, Equity, and Probity.
-              </p>
-            </FadeUp>
-            <motion.div
-              ref={panelRef}
-              initial={{ opacity: 0, y: 30 }}
-              animate={isInView ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.7, ease: EASE }}
-              className="p-5 rounded-2xl bg-gradient-to-br from-[#00684A] to-[#004D36] text-white shadow-lg space-y-3"
-            >
+            <p className="text-slate-600 text-sm sm:text-base leading-relaxed">
+              Africa Infrastructures Développement SARL operates with full
+              regulatory compliance under the Autorité de Régulation des Marchés
+              Publics (ARMP). Scroll to trace our verified state attestations.
+            </p>
+            <div className="p-6 rounded-2xl bg-gradient-to-br from-[#00684A] to-[#004D36] text-white shadow-xl space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold uppercase tracking-wider text-amber-300">
                   Official Registration
@@ -2802,31 +2874,63 @@ const CompanySection = () => {
                   • Certificats ARMP : N° 024/2025, N° 038/2025, N° 137–142/2024
                 </div>
               </div>
-            </motion.div>
+            </div>
           </div>
 
           <div className="lg:col-span-7">
-            <FadeUp
-              delay={0.15}
-              className="bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden"
-            >
+            <div className="bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden">
               <div className="bg-slate-900 text-white px-6 py-4 flex items-center justify-between border-b-4 border-[#C86D2D]">
                 <div>
                   <h3 className="font-bold text-base">
                     Verified Public Contracts & ARMP Attestations
                   </h3>
                   <p className="text-xs text-slate-400">
-                    Fetched from official DRC public procurement records
+                    Laser timeline traces official DRC procurement records as
+                    you scroll
                   </p>
                 </div>
                 <FileCheck className="w-6 h-6 text-[#C86D2D]" />
               </div>
-              <div className="divide-y divide-slate-200">
+
+              <div className="relative pl-10 pr-6 py-6 space-y-6">
+                <div className="absolute left-5 top-8 bottom-8 w-1 bg-slate-200 rounded-full" />
+                <motion.div
+                  style={{ scaleY: lineScaleY }}
+                  className="absolute left-5 top-8 bottom-8 w-1 bg-gradient-to-b from-[#00684A] via-emerald-400 to-[#C86D2D] origin-top rounded-full shadow-[0_0_10px_#10b981]"
+                />
+
                 {ARMP_CERTIFICATES.map((cert, index) => (
-                  <CertTimelineItem key={index} cert={cert} index={index} />
+                  <motion.div
+                    key={index}
+                    initial={{ opacity: 0.25, x: 25 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    viewport={{ margin: "-80px" }}
+                    transition={{ duration: 0.5 }}
+                    className="relative p-5 rounded-2xl bg-slate-50 border border-slate-200/90 hover:border-[#00684A] transition shadow-sm"
+                  >
+                    <span className="absolute -left-[27px] top-6 w-4 h-4 rounded-full bg-[#C86D2D] ring-4 ring-white shadow" />
+                    <div className="flex flex-wrap items-center justify-between gap-2 mb-1.5">
+                      <span className="px-2.5 py-0.5 rounded-md bg-emerald-100 text-[#00684A] font-mono text-xs font-bold">
+                        {cert.ref}
+                      </span>
+                      <span className="text-xs font-extrabold text-[#C86D2D] bg-orange-50 px-2.5 py-0.5 rounded-md border border-orange-200">
+                        {cert.amount}
+                      </span>
+                    </div>
+                    <h4 className="font-bold text-slate-900 text-sm">
+                      {cert.project}
+                    </h4>
+                    <div className="mt-2 flex flex-wrap items-center justify-between text-xs text-slate-500">
+                      <span>{cert.authority}</span>
+                      <span className="text-emerald-700 font-semibold flex items-center gap-1">
+                        <CheckCircle2 className="w-3.5 h-3.5" /> {cert.status} (
+                        {cert.year})
+                      </span>
+                    </div>
+                  </motion.div>
                 ))}
               </div>
-            </FadeUp>
+            </div>
           </div>
         </div>
       </div>
@@ -2835,7 +2939,7 @@ const CompanySection = () => {
 };
 
 // ============================================================================
-// 9. CONTACT
+// 9. CONTACT — 3D PERSPECTIVE UNFOLD ON SCROLL
 // ============================================================================
 const ContactSection = ({
   contactForm,
@@ -2843,268 +2947,269 @@ const ContactSection = ({
   contactSubmitted,
   setContactSubmitted,
   handleContactSubmit,
-}) => (
-  <section
-    id="contact"
-    className="py-20 lg:py-28 bg-slate-100 border-t border-slate-200"
-  >
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div className="grid lg:grid-cols-12 gap-12">
-        <div className="lg:col-span-5 space-y-6">
-          <FadeUp>
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-100 text-[#00684A] text-xs font-extrabold uppercase tracking-wider">
-              <Phone className="w-3.5 h-3.5" />
-              <span>Get in Touch</span>
-            </div>
-          </FadeUp>
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900">
-            <RevealWords text="Partner With AID SARL for Your Next Project" />
-          </h2>
-          <FadeUp delay={0.1}>
+}) => {
+  const secRef = useRef(null);
+  const { scrollYProgress } = useScroll({
+    target: secRef,
+    offset: ["start 90%", "center center"],
+  });
+
+  const rotateX = useTransform(scrollYProgress, [0, 1], [-18, 0]);
+  const scale = useTransform(scrollYProgress, [0, 1], [0.92, 1]);
+
+  return (
+    <section
+      ref={secRef}
+      id="contact"
+      className="py-20 lg:py-28 bg-slate-100 border-t border-slate-200"
+      style={{ perspective: 1200 }}
+    >
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid lg:grid-cols-12 gap-12">
+          <div className="lg:col-span-5 space-y-6">
+            <FadeUp>
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-100 text-[#00684A] text-xs font-extrabold uppercase tracking-wider">
+                <Phone className="w-3.5 h-3.5" />
+                <span>Get in Touch</span>
+              </div>
+            </FadeUp>
+            <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900">
+              <RevealWords text="Partner With AID SARL for Your Next Project" />
+            </h2>
             <p className="text-slate-600 text-sm sm:text-base leading-relaxed">
               Contact our engineering and tender desk for public procurement
               bids, private building contracts, road construction, or civil
               engineering consultations.
             </p>
-          </FadeUp>
-          <StaggerGroup className="space-y-4 pt-2" stagger={0.12}>
-            <StaggerItem className="p-5 rounded-2xl bg-white border-l-4 border-[#00684A] shadow-sm">
-              <div className="text-xs font-extrabold uppercase text-[#00684A]">
-                Headquarters • Haut-Katanga
-              </div>
-              <div className="font-bold text-slate-900 text-base mt-1">
-                Lubumbashi, Democratic Republic of Congo
-              </div>
-              <p className="text-xs text-slate-600 mt-1">
-                Quartier Industriel & Administratif
-              </p>
-            </StaggerItem>
-            <StaggerItem className="p-5 rounded-2xl bg-white border-l-4 border-[#C86D2D] shadow-sm">
-              <div className="text-xs font-extrabold uppercase text-[#C86D2D]">
-                National Liaison Office
-              </div>
-              <div className="font-bold text-slate-900 text-base mt-1">
-                Kinshasa - Gombe, DRC
-              </div>
-              <p className="text-xs text-slate-600 mt-1">
-                Liaison Ministry of Infrastructure & ARMP
-              </p>
-            </StaggerItem>
-            <StaggerItem className="grid grid-cols-2 gap-4">
-              <div className="p-4 rounded-xl bg-white border border-slate-200">
-                <Mail className="w-5 h-5 text-[#00684A] mb-1.5" />
-                <div className="text-xs text-slate-500">Email</div>
-                <div className="text-xs sm:text-sm font-bold text-slate-900">
-                  contact@aid-rdc.com
+            <StaggerGroup className="space-y-4 pt-2" stagger={0.12}>
+              <StaggerItem className="p-5 rounded-2xl bg-white border-l-4 border-[#00684A] shadow-sm">
+                <div className="text-xs font-extrabold uppercase text-[#00684A]">
+                  Headquarters • Haut-Katanga
                 </div>
-              </div>
-              <div className="p-4 rounded-xl bg-white border border-slate-200">
-                <Clock className="w-5 h-5 text-[#C86D2D] mb-1.5" />
-                <div className="text-xs text-slate-500">Working Hours</div>
-                <div className="text-xs sm:text-sm font-bold text-slate-900">
-                  Mon - Sat : 08:00 - 17:30
+                <div className="font-bold text-slate-900 text-base mt-1">
+                  Lubumbashi, Democratic Republic of Congo
                 </div>
-              </div>
-            </StaggerItem>
-          </StaggerGroup>
-        </div>
+                <p className="text-xs text-slate-600 mt-1">
+                  Quartier Industriel & Administratif
+                </p>
+              </StaggerItem>
+              <StaggerItem className="p-5 rounded-2xl bg-white border-l-4 border-[#C86D2D] shadow-sm">
+                <div className="text-xs font-extrabold uppercase text-[#C86D2D]">
+                  National Liaison Office
+                </div>
+                <div className="font-bold text-slate-900 text-base mt-1">
+                  Kinshasa - Gombe, DRC
+                </div>
+                <p className="text-xs text-slate-600 mt-1">
+                  Liaison Ministry of Infrastructure & ARMP
+                </p>
+              </StaggerItem>
+              <StaggerItem className="grid grid-cols-2 gap-4">
+                <div className="p-4 rounded-xl bg-white border border-slate-200">
+                  <Mail className="w-5 h-5 text-[#00684A] mb-1.5" />
+                  <div className="text-xs text-slate-500">Email</div>
+                  <div className="text-xs sm:text-sm font-bold text-slate-900">
+                    contact@aid-rdc.com
+                  </div>
+                </div>
+                <div className="p-4 rounded-xl bg-white border border-slate-200">
+                  <Clock className="w-5 h-5 text-[#C86D2D] mb-1.5" />
+                  <div className="text-xs text-slate-500">Working Hours</div>
+                  <div className="text-xs sm:text-sm font-bold text-slate-900">
+                    Mon - Sat : 08:00 - 17:30
+                  </div>
+                </div>
+              </StaggerItem>
+            </StaggerGroup>
+          </div>
 
-        <div className="lg:col-span-7">
-          <FadeUp
-            delay={0.1}
-            className="bg-white rounded-3xl p-8 sm:p-10 shadow-xl border border-slate-200"
+          <motion.div
+            style={{ rotateX, scale, transformOrigin: "top center" }}
+            className="lg:col-span-7"
           >
-            <h3 className="text-2xl font-extrabold text-slate-900 mb-2">
-              Request a Quote or Tender Consultation
-            </h3>
-            <p className="text-xs sm:text-sm text-slate-500 mb-6">
-              Fill out the project specifications below and our engineering desk
-              will respond promptly.
-            </p>
-            <AnimatePresence mode="wait">
-              {contactSubmitted ? (
-                <motion.div
-                  key="success"
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.9 }}
-                  className="p-8 rounded-2xl bg-emerald-50 border border-emerald-200 text-center space-y-4"
-                >
+            <div className="bg-white rounded-3xl p-8 sm:p-10 shadow-2xl border border-slate-200">
+              <h3 className="text-2xl font-extrabold text-slate-900 mb-2">
+                Request a Quote or Tender Consultation
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-500 mb-6">
+                Fill out the project specifications below and our engineering
+                desk will respond promptly.
+              </p>
+              <AnimatePresence mode="wait">
+                {contactSubmitted ? (
                   <motion.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{
-                      type: "spring",
-                      stiffness: 260,
-                      damping: 16,
-                      delay: 0.1,
-                    }}
-                    className="w-14 h-14 rounded-full bg-[#00684A] text-white flex items-center justify-center mx-auto"
+                    key="success"
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
+                    className="p-8 rounded-2xl bg-emerald-50 border border-emerald-200 text-center space-y-4"
                   >
-                    <CheckCircle2 className="w-8 h-8" />
-                  </motion.div>
-                  <h4 className="text-xl font-extrabold text-slate-900">
-                    Thank You! Inquiry Received.
-                  </h4>
-                  <p className="text-sm text-slate-600 max-w-md mx-auto">
-                    Our technical directorate at Africa Infrastructures
-                    Développement SARL has received your message.
-                  </p>
-                  <button
-                    onClick={() => setContactSubmitted(false)}
-                    className="px-5 py-2.5 rounded-xl bg-[#00684A] text-white text-xs font-bold"
-                  >
-                    Send Another Inquiry
-                  </button>
-                </motion.div>
-              ) : (
-                <motion.form
-                  key="form"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  onSubmit={handleContactSubmit}
-                  className="space-y-4"
-                >
-                  <div className="grid sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1">
-                        Full Name *
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={contactForm.name}
-                        onChange={(e) =>
-                          setContactForm({
-                            ...contactForm,
-                            name: e.target.value,
-                          })
-                        }
-                        placeholder="Ex: Jean-Marc Kabongo"
-                        className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:border-[#00684A] focus:outline-none focus:ring-2 focus:ring-emerald-100 transition-all text-sm"
-                      />
+                    <div className="w-14 h-14 rounded-full bg-[#00684A] text-white flex items-center justify-center mx-auto">
+                      <CheckCircle2 className="w-8 h-8" />
                     </div>
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1">
-                        Organization / Ministry
-                      </label>
-                      <input
-                        type="text"
-                        value={contactForm.organization}
-                        onChange={(e) =>
-                          setContactForm({
-                            ...contactForm,
-                            organization: e.target.value,
-                          })
-                        }
-                        placeholder="Ex: Ministry of Infrastructure"
-                        className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:border-[#00684A] focus:outline-none focus:ring-2 focus:ring-emerald-100 transition-all text-sm"
-                      />
-                    </div>
-                  </div>
-                  <div className="grid sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1">
-                        Email Address *
-                      </label>
-                      <input
-                        type="email"
-                        required
-                        value={contactForm.email}
-                        onChange={(e) =>
-                          setContactForm({
-                            ...contactForm,
-                            email: e.target.value,
-                          })
-                        }
-                        placeholder="name@company.com"
-                        className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:border-[#00684A] focus:outline-none focus:ring-2 focus:ring-emerald-100 transition-all text-sm"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1">
-                        Phone Number *
-                      </label>
-                      <input
-                        type="tel"
-                        required
-                        value={contactForm.phone}
-                        onChange={(e) =>
-                          setContactForm({
-                            ...contactForm,
-                            phone: e.target.value,
-                          })
-                        }
-                        placeholder="+243 ..."
-                        className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:border-[#00684A] focus:outline-none focus:ring-2 focus:ring-emerald-100 transition-all text-sm"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Infrastructure Sector
-                    </label>
-                    <select
-                      value={contactForm.projectType}
-                      onChange={(e) =>
-                        setContactForm({
-                          ...contactForm,
-                          projectType: e.target.value,
-                        })
-                      }
-                      className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:border-[#00684A] focus:outline-none text-sm bg-white"
+                    <h4 className="text-xl font-extrabold text-slate-900">
+                      Thank You! Inquiry Received.
+                    </h4>
+                    <p className="text-sm text-slate-600 max-w-md mx-auto">
+                      Our technical directorate at Africa Infrastructures
+                      Développement SARL has received your message.
+                    </p>
+                    <button
+                      onClick={() => setContactSubmitted(false)}
+                      className="px-5 py-2.5 rounded-xl bg-[#00684A] text-white text-xs font-bold"
                     >
-                      <option>
-                        Civil Engineering & Institutional Buildings
-                      </option>
-                      <option>Urban Roadways & Asphalt Paving</option>
-                      <option>Hydraulic & Drainage Networks</option>
-                      <option>Public Procurement / ARMP Tender</option>
-                      <option>Mining & Industrial Civil Works</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Project Details & Location *
-                    </label>
-                    <textarea
-                      rows={4}
-                      required
-                      value={contactForm.message}
-                      onChange={(e) =>
-                        setContactForm({
-                          ...contactForm,
-                          message: e.target.value,
-                        })
-                      }
-                      placeholder="Describe your project scope, location, timeline..."
-                      className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:border-[#00684A] focus:outline-none focus:ring-2 focus:ring-emerald-100 transition-all text-sm"
-                    />
-                  </div>
-                  <MagneticButton
-                    strength={0.1}
-                    className="w-full py-4 rounded-xl bg-gradient-to-r from-[#00684A] to-[#00523A] hover:from-[#00523A] hover:to-[#003E2C] text-white font-bold text-sm shadow-lg transition-colors flex items-center justify-center gap-2"
+                      Send Another Inquiry
+                    </button>
+                  </motion.div>
+                ) : (
+                  <motion.form
+                    key="form"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    onSubmit={handleContactSubmit}
+                    className="space-y-4"
                   >
-                    <Send className="w-4 h-4 text-amber-300" />
-                    <span>Submit Project Inquiry to AID SARL</span>
-                  </MagneticButton>
-                </motion.form>
-              )}
-            </AnimatePresence>
-          </FadeUp>
+                    <div className="grid sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">
+                          Full Name *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={contactForm.name}
+                          onChange={(e) =>
+                            setContactForm({
+                              ...contactForm,
+                              name: e.target.value,
+                            })
+                          }
+                          placeholder="Ex: Jean-Marc Kabongo"
+                          className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:border-[#00684A] focus:outline-none focus:ring-2 focus:ring-emerald-100 transition-all text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">
+                          Organization / Ministry
+                        </label>
+                        <input
+                          type="text"
+                          value={contactForm.organization}
+                          onChange={(e) =>
+                            setContactForm({
+                              ...contactForm,
+                              organization: e.target.value,
+                            })
+                          }
+                          placeholder="Ex: Ministry of Infrastructure"
+                          className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:border-[#00684A] focus:outline-none focus:ring-2 focus:ring-emerald-100 transition-all text-sm"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">
+                          Email Address *
+                        </label>
+                        <input
+                          type="email"
+                          required
+                          value={contactForm.email}
+                          onChange={(e) =>
+                            setContactForm({
+                              ...contactForm,
+                              email: e.target.value,
+                            })
+                          }
+                          placeholder="name@company.com"
+                          className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:border-[#00684A] focus:outline-none focus:ring-2 focus:ring-emerald-100 transition-all text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">
+                          Phone Number *
+                        </label>
+                        <input
+                          type="tel"
+                          required
+                          value={contactForm.phone}
+                          onChange={(e) =>
+                            setContactForm({
+                              ...contactForm,
+                              phone: e.target.value,
+                            })
+                          }
+                          placeholder="+243 ..."
+                          className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:border-[#00684A] focus:outline-none focus:ring-2 focus:ring-emerald-100 transition-all text-sm"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        Infrastructure Sector
+                      </label>
+                      <select
+                        value={contactForm.projectType}
+                        onChange={(e) =>
+                          setContactForm({
+                            ...contactForm,
+                            projectType: e.target.value,
+                          })
+                        }
+                        className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:border-[#00684A] focus:outline-none text-sm bg-white"
+                      >
+                        <option>
+                          Civil Engineering & Institutional Buildings
+                        </option>
+                        <option>Urban Roadways & Asphalt Paving</option>
+                        <option>Hydraulic & Drainage Networks</option>
+                        <option>Public Procurement / ARMP Tender</option>
+                        <option>Mining & Industrial Civil Works</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        Project Details & Location *
+                      </label>
+                      <textarea
+                        rows={4}
+                        required
+                        value={contactForm.message}
+                        onChange={(e) =>
+                          setContactForm({
+                            ...contactForm,
+                            message: e.target.value,
+                          })
+                        }
+                        placeholder="Describe your project scope, location, timeline..."
+                        className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:border-[#00684A] focus:outline-none focus:ring-2 focus:ring-emerald-100 transition-all text-sm"
+                      />
+                    </div>
+                    <MagneticButton
+                      type="submit"
+                      strength={0.1}
+                      className="w-full py-4 rounded-xl bg-gradient-to-r from-[#00684A] to-[#00523A] hover:from-[#00523A] hover:to-[#003E2C] text-white font-bold text-sm shadow-lg transition-colors flex items-center justify-center gap-2"
+                    >
+                      <Send className="w-4 h-4 text-amber-300" />
+                      <span>Submit Project Inquiry to AID SARL</span>
+                    </MagneticButton>
+                  </motion.form>
+                )}
+              </AnimatePresence>
+            </div>
+          </motion.div>
         </div>
       </div>
-    </div>
-  </section>
-);
+    </section>
+  );
+};
 
 // ============================================================================
 // FOOTER
 // ============================================================================
 const Footer = ({ scrollToSection }) => (
   <footer className="bg-slate-950 text-slate-400">
-    {/* Animated Hazard Stripe Bar */}
     <div className="h-2.5 w-full hazard-bar" />
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
       <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-10">
@@ -3275,7 +3380,7 @@ const LightboxModal = ({
 );
 
 // ============================================================================
-// MAIN LANDING COMPONENT
+// MAIN LANDING PAGE WITH LENIS ENGINE
 // ============================================================================
 const Landing = () => {
   const [activeSection, setActiveSection] = useState("home");
@@ -3291,11 +3396,35 @@ const Landing = () => {
     organization: "",
     email: "",
     phone: "",
-    projectType: "Civil Engineering & Buildings",
+    projectType: "Civil Engineering & Institutional Buildings",
     message: "",
   });
 
   const [toastMessage, setToastMessage] = useState(null);
+  const lenisRef = useRef(null);
+
+  useEffect(() => {
+    const lenis = new Lenis({
+      duration: 1.25,
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      smoothWheel: true,
+      wheelMultiplier: 1,
+      touchMultiplier: 1.8,
+    });
+    lenisRef.current = lenis;
+
+    let rafId;
+    const raf = (time) => {
+      lenis.raf(time);
+      rafId = requestAnimationFrame(raf);
+    };
+    rafId = requestAnimationFrame(raf);
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      lenis.destroy();
+    };
+  }, []);
 
   const triggerToast = (msg) => {
     setToastMessage(msg);
@@ -3305,7 +3434,7 @@ const Landing = () => {
   useEffect(() => {
     const handleScroll = () => {
       const sections = NAV_ITEMS.map((item) => item.id);
-      const scrollPos = window.scrollY + 180;
+      const scrollPos = window.scrollY + 240;
       for (const sec of sections) {
         const el = document.getElementById(sec);
         if (
@@ -3318,7 +3447,7 @@ const Landing = () => {
         }
       }
     };
-    window.addEventListener("scroll", handleScroll);
+    window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
@@ -3326,13 +3455,20 @@ const Landing = () => {
     setActiveSection(id);
     setMobileMenuOpen(false);
     const el = document.getElementById(id);
-    if (el) el.scrollIntoView({ behavior: "smooth" });
+    if (!el) return;
+
+    if (lenisRef.current) {
+      lenisRef.current.scrollTo(el, { offset: -88, duration: 1.4 });
+    } else {
+      el.scrollIntoView({ behavior: "smooth" });
+    }
   };
 
   const categories = [
     "All",
     "Buildings",
     "Roads & Asphalt",
+    "Bridges & Civil",
     "Site Progress",
     "Equipment",
   ];
@@ -3363,8 +3499,8 @@ const Landing = () => {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans selection:bg-[#00684A] selection:text-white">
       <GlobalMotionStyles />
-      <ScrollProgressBar />
-      <ScrollTowerCraneHUD />
+      <ScrollProgressLaser />
+      <LenisTelemetryHUD activeSection={activeSection} />
       <SideDotNav
         activeSection={activeSection}
         scrollToSection={scrollToSection}
@@ -3392,11 +3528,23 @@ const Landing = () => {
       />
 
       <HeroSection scrollToSection={scrollToSection} />
-      <ConstructionPanoramaSection />
+
+      <VelocityMarquee
+        items={[
+          "ARMP CERTIFIED PUBLIC WORKS",
+          "PALAIS DE JUSTICE LUBUMBASHI (R+2)",
+          "160T/HR HOT-MIX ASPHALT PLANT",
+          "ISO 9001 STRUCTURAL ENGINEERING",
+          "COPPERBELT HAUL ROAD INFRASTRUCTURE",
+        ]}
+        baseVelocity={1.1}
+      />
+
+      <InteractiveSiteSimulation />
       <AboutSection />
-      <RoadPaverDivider label="HIGHWAY & URBAN ASPHALT PAVING FLEET • HAUT-KATANGA" />
       <ServicesSection />
       <IndustriesSection />
+
       <WorkGallerySection
         galleryItems={galleryItems}
         categories={categories}
@@ -3405,7 +3553,20 @@ const Landing = () => {
         filteredGallery={filteredGallery}
         setLightboxItem={setLightboxItem}
       />
-      <RoadPaverDivider label="PUBLIC INFRASTRUCTURE & DRAINAGE ENGINEERING • OVD / ARMP" />
+
+      <FleetShowcaseSection />
+
+      <VelocityMarquee
+        items={[
+          "65+ PROPRIETARY HEAVY MACHINES",
+          "LUBUMBASHI • KINSHASA • KOLWEZI",
+          "GEOTECHNICAL & TOPOGRAPHICAL LAB",
+          "ZERO-DEFECT QUALITY POLICY",
+        ]}
+        baseVelocity={-1.1}
+        dark={false}
+      />
+
       <InsightsSection />
       <ResourcesSection />
       <CompanySection />
